@@ -2,49 +2,83 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>我的 3D 画展</title>
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <title>王西京 | 线上艺术展</title>
     <style>
-        /* 页面背景改为深灰色，更有质感 */
-        /* 修改 gallery-3d.html 的这一行 */
-body { margin: 0; overflow: hidden; background-color: #050505; font-family: sans-serif; }
-
-        
-        /* 遮罩层：半透明黑色 */
-        #blocker {
-            position: absolute; width: 100%; height: 100%;
-            background-color: rgba(0,0,0,0.6); /* 变淡一点 */
-            backdrop-filter: blur(5px); /* 加点磨砂玻璃效果 */
-            color: white;
-            display: flex; flex-direction: column;
-            justify-content: center; align-items: center;
-            z-index: 999; cursor: pointer;
-            transition: opacity 0.4s;
-        }
-
-        /* 标题和文字改小 */
-        #instructions { text-align: center; }
-        
-        h1 { font-size: 28px; font-weight: 300; letter-spacing: 4px; margin: 0 0 10px 0; text-transform: uppercase; }
-        p { font-size: 14px; color: #ccc; margin: 5px 0; }
-
-        .keys { 
-            font-size: 12px; color: #888; margin-top: 25px; 
-            border-top: 1px solid #444; padding-top: 15px;
-            display: grid; grid-template-columns: 1fr 1fr; gap: 10px; text-align: left;
+        /* === 1. 整体风格：中式极简 === */
+        body { 
+            margin: 0; overflow: hidden; 
+            background-color: #e0e0e0; /* 页面加载时的背景 */
+            font-family: "Songti SC", "Noto Serif SC", serif; /* 宋体，更有文化感 */
         }
         
-        /* 按钮样式优化 */
-        .btn { 
-            font-size: 14px; letter-spacing: 1px;
-            border: 1px solid rgba(255,255,255,0.4); 
-            padding: 8px 24px; margin-top: 30px; 
-            border-radius: 50px; 
-            background: rgba(255,255,255,0.1); 
+        /* === 2. 准星 === */
+        #crosshair {
+            position: absolute; top: 50%; left: 50%; width: 10px; height: 10px;
+            border: 1px solid rgba(0,0,0,0.5); border-radius: 50%;
+            transform: translate(-50%, -50%); pointer-events: none; z-index: 10;
+        }
+        #crosshair::after {
+            content: ''; position: absolute; top: 50%; left: 50%; width: 2px; height: 2px;
+            background: rgba(0,0,0,0.8); transform: translate(-50%, -50%);
+        }
+
+        /* === 3. 详情弹窗 (仿博物馆铭牌) === */
+        #detail-modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(245, 245, 245, 0.98); z-index: 2000;
+            flex-direction: column; align-items: center; justify-content: center;
+            opacity: 0; transition: opacity 0.5s;
+        }
+        #detail-modal.active { opacity: 1; }
+        
+        #detail-content-box {
+            display: flex; flex-direction: column; align-items: center;
+            max-width: 90%; max-height: 85vh;
+        }
+        
+        #detail-img {
+            max-height: 60vh; max-width: 100%;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+            border: 8px solid white; /* 白色卡纸装裱感 */
+        }
+        
+        #detail-info {
+            margin-top: 30px; text-align: center; color: #222;
+            max-width: 600px;
+        }
+        #modal-title { font-size: 28px; margin-bottom: 10px; font-weight: bold; letter-spacing: 2px; }
+        #modal-desc { font-size: 16px; color: #666; line-height: 1.8; }
+        
+        #close-btn {
+            position: absolute; top: 30px; right: 40px; 
+            font-size: 24px; color: #333; cursor: pointer; border: 1px solid #ccc;
+            width: 40px; height: 40px; line-height: 38px; text-align: center; border-radius: 50%;
             transition: all 0.3s;
         }
-        .btn:hover { background: white; color: black; border-color: white; }
+        #close-btn:hover { background: #333; color: white; border-color: #333; }
+
+        /* === 4. 进入封面 === */
+        #blocker {
+            position: absolute; width: 100%; height: 100%;
+            background-color: #f2f2f2; 
+            color: #333;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            z-index: 999; cursor: pointer; transition: opacity 0.6s;
+        }
+        .cover-title { font-size: 40px; margin-bottom: 10px; letter-spacing: 8px; border-bottom: 2px solid #333; padding-bottom: 15px; }
+        .cover-subtitle { font-size: 14px; color: #666; letter-spacing: 2px; }
+        
+        .btn { 
+            border: 1px solid #333; padding: 12px 40px; margin-top: 40px;
+            background: transparent; color: #333; font-size: 14px; letter-spacing: 2px;
+            transition: all 0.3s;
+        }
+        .btn:hover { background: #333; color: white; }
     </style>
 
+    <script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
     <script type="importmap">
     {
         "imports": {
@@ -55,19 +89,43 @@ body { margin: 0; overflow: hidden; background-color: #050505; font-family: sans
     </script>
 </head>
 <body>
-    <div id="blocker">
-        <div id="instructions">
-            <h1>Virtual Gallery</h1>
-            <p>点击屏幕进入展厅</p>
-            <div class="btn">开始参观</div>
-            <div class="keys">
-                <span>[W A S D] 移动</span>
-                <span>[鼠标] 环视</span>
-                <span>[ESC] 暂停</span>
+    <div id="crosshair"></div>
+
+    <div id="detail-modal">
+        <div id="close-btn">✕</div>
+        <div id="detail-content-box">
+            <img id="detail-img" src="" alt="Art">
+            <div id="detail-info">
+                <div id="modal-title">标题</div>
+                <div id="modal-desc">简介...</div>
             </div>
         </div>
     </div>
 
+    <div id="blocker">
+        <div style="text-align:center">
+            <div class="cover-title">王西京</div>
+            <div class="cover-subtitle">中国人物画艺术大展 · 线上展览</div>
+            <div class="btn">进入展厅</div>
+        </div>
+    </div>
+
     <script type="module" src="assets/js/gallery-3d.js"></script>
+
+    <script>
+        const modal = document.getElementById('detail-modal');
+        const closeBtn = document.getElementById('close-btn');
+        
+        function closeModal() {
+            modal.classList.remove('active');
+            setTimeout(() => { modal.style.display = 'none'; }, 500); // 等动画结束
+            window.dispatchEvent(new Event('closeModal'));
+        }
+        
+        closeBtn.onclick = closeModal;
+        modal.onclick = (e) => {
+            if(e.target === modal || e.target.id === 'detail-content-box') closeModal();
+        };
+    </script>
 </body>
 </html>
