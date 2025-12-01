@@ -20,7 +20,7 @@
         html, body {
             margin: 0; padding: 0;
             width: 100%; 
-            background: #111; /* 深色底色作为兜底 */
+            background: #111;
             color: var(--text-primary);
             font-family: "Songti SC", "Noto Serif SC", serif;
             -webkit-font-smoothing: antialiased;
@@ -31,31 +31,30 @@
         ::-webkit-scrollbar { width: 0px; background: transparent; }
         * { -webkit-tap-highlight-color: transparent; outline: none; box-sizing: border-box; }
 
-        /* === 2. 动态背景层 (核心修复) === */
+        /* === 2. 动态背景层 === */
         .dynamic-bg-container {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 0; /* 修复：从 -1 改为 0，防止被body背景覆盖 */
-            pointer-events: none; /* 确保不阻挡点击 */
+            z-index: 0; 
+            pointer-events: none; 
             overflow: hidden;
         }
         
-        /* 统一的黑色遮罩，保证文字可读性 */
         .bg-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.6); /* 调节这里的透明度控制背景暗度 */
+            background: rgba(0, 0, 0, 0.5); /* 稍微调亮一点点，让背景细节可见 */
             z-index: 2;
         }
 
         .bg-layer {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            opacity: 0; transition: opacity 1s ease-in-out;
+            opacity: 0; transition: opacity 1.2s ease-in-out; /* 更柔和的过渡 */
             z-index: 1;
         }
         .bg-layer.active { opacity: 1; }
         
         .bg-img {
             width: 100%; height: 100%; object-fit: cover;
-            filter: blur(30px) saturate(1.2); /* 模糊并增加饱和度 */
+            filter: blur(40px) saturate(1.1) brightness(0.8);
             transform: scale(1.1);
         }
 
@@ -133,18 +132,21 @@
             overflow: hidden; display: flex; align-items: center;
             visibility: hidden;
             position: relative; 
-            z-index: 10; /* 修复：提升层级，确保位于背景之上 */
+            z-index: 10; 
         }
         body.started .gallery-container { visibility: visible; }
 
         .gallery-wrapper {
             display: flex; align-items: center; flex-wrap: nowrap;
-            height: 100%; padding-left: 15vw; will-change: transform;
+            height: 100%; 
+            will-change: transform;
+            /* padding-left 由 JS 动态计算 */
         }
 
         .gallery-item {
             display: flex; flex-direction: column; align-items: flex-start; justify-content: center;
-            width: 50vw; height: 100%; margin-right: 10vw; flex-shrink: 0;
+            /* width 和 margin 由 JS 动态计算 */
+            height: 100%; flex-shrink: 0;
             position: relative;
         }
 
@@ -152,11 +154,11 @@
             position: relative; width: 100%; height: 60vh; 
             overflow: hidden; cursor: pointer;
             box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4);
-            transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+            transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.4s ease;
             background: white; padding: 10px;
             transform: translateZ(0);
         }
-        .art-card:hover { transform: scale(1.02); }
+        .art-card:hover { transform: scale(1.02); box-shadow: 0 40px 80px rgba(0,0,0,0.6); }
 
         .art-img {
             width: 100%; height: 100%; object-fit: cover;
@@ -165,17 +167,18 @@
         .art-card:hover .art-img { transform: scale(1.05); }
 
         .art-preview-info {
-            margin-top: 20px; margin-left: 0px; text-align: left; opacity: 1;
-            text-shadow: 0 2px 10px rgba(0,0,0,0.8); /* 加强阴影 */
+            margin-top: 20px; text-align: left; opacity: 1;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.8);
+            transform: translateX(5px);
         }
         .art-preview-title { font-size: 20px; font-weight: bold; margin: 0 0 5px 0; letter-spacing: 2px; }
-        .art-preview-meta { font-size: 13px; color: rgba(255,255,255,0.9); font-family: sans-serif; letter-spacing: 1px;}
+        .art-preview-meta { font-size: 13px; color: rgba(255,255,255,0.8); font-family: sans-serif; letter-spacing: 1px;}
         
-        /* === 6. 详情弹窗 === */
+        /* === 6. 详情弹窗 (优化版) === */
         .modal {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            background: rgba(0, 0, 0, 0.85); /* 稍微加深背景 */
+            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
             z-index: 999;
             display: flex; justify-content: center; align-items: center;
             opacity: 0; pointer-events: none; transition: opacity 0.4s ease;
@@ -184,41 +187,68 @@
 
         .modal-content-box {
             position: relative; width: 90vw; height: 90vh; max-width: 1400px;
-            background: rgba(30, 30, 30, 0.85); 
-            border: 1px solid rgba(255,255,255,0.2);
-            border-radius: 12px;
-            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5);
-            padding: 30px;
-            box-sizing: border-box; display: flex; flex-direction: column; align-items: center;
+            background: #1a1a1a; /* 实色背景，避免杂乱 */
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+            padding: 0; /* 移除内边距，完全控制布局 */
+            box-sizing: border-box; 
+            display: flex; flex-direction: column; /* 上下布局 */
             transform: scale(0.96); transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+            overflow: hidden;
         }
         .modal.active .modal-content-box { transform: scale(1); }
 
+        /* 上半部分：图片区域，自动撑满 */
         .modal-img-wrapper {
-            position: relative; width: 100%; flex-grow: 1;
+            position: relative; width: 100%; 
+            flex: 1; /* 关键：占据剩余所有空间 */
             display: flex; justify-content: center; align-items: center;
-            overflow: hidden; border-radius: 4px;
+            background: #000;
+            overflow: hidden;
+            padding: 20px; /* 给图片一点呼吸空间 */
         }
         .modal-img { 
-            max-width: 100%; max-height: 100%; object-fit: contain; 
-            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            width: auto; height: auto; 
+            max-width: 100%; max-height: 100%; 
+            object-fit: contain; 
+            box-shadow: 0 0 30px rgba(0,0,0,0.5);
         }
 
+        /* 下半部分：文字区域 */
         .modal-text {
-            margin-top: 20px; text-align: center; max-width: 700px;
-            max-height: 25vh; overflow-y: auto; color: #fff;
+            width: 100%; 
+            padding: 25px 40px;
+            background: #1a1a1a;
+            color: #fff;
+            border-top: 1px solid rgba(255,255,255,0.05);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
-        .modal-title { font-size: 24px; font-weight: bold; margin: 0 0 8px 0; letter-spacing: 1px; }
-        .modal-meta { font-size: 12px; color: rgba(255,255,255,0.6); margin-bottom: 10px; }
-        .modal-desc { font-size: 14px; line-height: 1.7; text-align: justify; opacity: 0.9; }
+
+        /* 桌面端左右布局优化 (如果屏幕够宽) */
+        @media (min-width: 1024px) {
+            .modal-content-box { flex-direction: row; }
+            .modal-img-wrapper { height: 100%; width: 65%; border-right: 1px solid rgba(255,255,255,0.05); }
+            .modal-text { height: 100%; width: 35%; border-top: none; justify-content: center; padding: 50px; }
+        }
+
+        .modal-title { font-size: 28px; font-weight: bold; margin: 0 0 10px 0; letter-spacing: 2px; color: var(--accent-gold); }
+        .modal-meta { font-size: 13px; color: rgba(255,255,255,0.5); margin-bottom: 20px; font-family: sans-serif; text-transform: uppercase; letter-spacing: 1px; }
+        .modal-desc { font-size: 15px; line-height: 1.8; text-align: justify; opacity: 0.9; color: #ddd; max-height: 40vh; overflow-y: auto; padding-right: 10px;}
+        
+        /* 美化滚动条 */
+        .modal-desc::-webkit-scrollbar { width: 4px; background: rgba(255,255,255,0.1); }
+        .modal-desc::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 2px; }
 
         .close-btn {
             position: absolute; top: 15px; right: 15px;
             width: 40px; height: 40px; border-radius: 50%;
-            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
-            color: #fff; font-size: 20px;
+            background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2);
+            color: #fff; font-size: 18px;
             display: flex; justify-content: center; align-items: center;
-            cursor: pointer; transition: all 0.3s; z-index: 10;
+            cursor: pointer; transition: all 0.3s; z-index: 100;
         }
         .close-btn:hover { background: #fff; color: #000; transform: rotate(90deg); }
 
@@ -229,10 +259,9 @@
         
         @media (max-width: 768px) {
             .intro-title { font-size: 12vw; }
-            .gallery-wrapper { padding-left: 10vw; }
-            .gallery-item { width: 85vw; margin-right: 5vw; } 
             .art-card { height: 50vh; }
-            .modal-content-box { width: 95vw; height: 95vh; padding: 15px; }
+            .modal-content-box { width: 100%; height: 100%; border-radius: 0; }
+            .modal-text { padding: 20px; }
             .controls-area { top: 15px; right: 15px; gap: 10px; }
             .control-btn { width: 32px; height: 32px; font-size: 10px; }
         }
@@ -242,7 +271,7 @@
 
     <div class="dynamic-bg-container" id="bg-container">
         <div class="bg-overlay"></div>
-        </div>
+    </div>
 
     <audio id="bg-music" loop preload="auto">
         <source src="assets/music/还是会想你曼波.mp3" type="audio/mpeg">
@@ -291,7 +320,7 @@
             en: { subtitle: "CHINESE PAINTING · Art of Morning Light", enterBtn: "ENTER GALLERY", scrollHint: "SCROLL TO EXPLORE", langBtn: "中" }
         };
 
-        const fixedArtworks = [
+        const originalArtworks = [
             { id: 1, src: "assets/images/gallery/eg1.jpg", title: { zh: "晨光熹微 No.1", en: "First Light No.1" }, year: "2023 · 138x69cm", desc: { zh: "笔墨在晨光中苏醒，捕捉第一缕阳光穿透云雾的瞬间。画面运用了传统的积墨法与现代的光影构成，试图在混沌中寻找秩序与希望。", en: "Ink awakens in the morning light, capturing the moment sunlight pierces through the mist. Using traditional ink layering with modern composition, it seeks order and hope amidst chaos." } },
             { id: 2, src: "assets/images/gallery/eg2.jpg", title: { zh: "山间清风 No.2", en: "Mountain Breeze No.2" }, year: "2023 · 69x69cm", desc: { zh: "以清透的淡彩与水墨交融，表现山间清风拂过林梢的动态。留白的处理旨在营造空灵幽远的意境，强调人与自然的和谐共生。", en: "Clear watercolors blend with ink to express the breeze sweeping through treetops. The negative space creates an ethereal atmosphere, emphasizing harmony between man and nature." } },
             { id: 3, src: "assets/images/gallery/eg3.jpg", title: { zh: "古木幽鸣 No.3", en: "Ancient Echoes No.3" }, year: "2022 · 180x97cm", desc: { zh: "聚焦于古树的肌理与沧桑感。通过焦墨与宿墨的对比，强化了古木盘根错节的生命力，仿佛能听到历史的回响。", en: "Focusing on the texture and vicissitudes of ancient trees. The contrast between dry and accumulated ink highlights the intertwined vitality, echoing the sounds of history." } },
@@ -306,6 +335,10 @@
             { id: 12, src: "assets/images/gallery/eg12.jpg", title: { zh: "岩壑藏幽 No.12", en: "Hidden Valley No.12" }, year: "2022 · 200x100cm", desc: { zh: "巨幅作品，强调山石的体量感与压迫感。通过繁复的皴法与深沉的墨色，构建了一个深邃、神秘的岩壑世界，引人探幽。", en: "A massive work emphasizing the volume and presence of rocks. Complex texturing and deep ink build a profound, mysterious valley world that invites exploration." } }
         ];
 
+        // 克隆数组实现无限循环（追加一份到末尾）
+        const totalItemsCount = originalArtworks.length;
+        const displayArtworks = [...originalArtworks, ...originalArtworks];
+
         let currentLang = 'zh';
 
         // === 语言 ===
@@ -317,11 +350,12 @@
             document.getElementById('lang-btn').innerText = t.langBtn;
 
             document.querySelectorAll('.art-preview-title').forEach((el, index) => {
-                if(fixedArtworks[index]) el.innerText = fixedArtworks[index].title[currentLang];
+                if(displayArtworks[index]) el.innerText = displayArtworks[index].title[currentLang];
             });
 
             if(document.body.classList.contains('modal-open') && typeof currentArtIndex !== 'undefined') {
-                 const art = fixedArtworks[currentArtIndex];
+                 // 使用取模来获取原始数据，处理克隆后的索引
+                 const art = originalArtworks[currentArtIndex % totalItemsCount];
                  document.getElementById('m-title').innerText = art.title[currentLang];
                  document.getElementById('m-desc').innerText = art.desc[currentLang];
             }
@@ -344,14 +378,32 @@
         const bgContainer = document.getElementById('bg-container');
         const isMobile = window.innerWidth < 768;
         
+        // 布局参数 (vw)
         const itemWidthVw = isMobile ? 85 : 50; 
         const itemMarginVw = isMobile ? 5 : 10;
         const paddingLeftVw = isMobile ? 10 : 15;
+        const singleItemTotalVw = itemWidthVw + itemMarginVw;
         
-        fixedArtworks.forEach((art, index) => {
-            // 画廊
+        // 1. 设置 wrapper 内边距
+        wrapper.style.paddingLeft = `${paddingLeftVw}vw`;
+
+        // 2. 生成背景层 (只需要生成原始数量)
+        originalArtworks.forEach((art, index) => {
+            const bgLayer = document.createElement('div');
+            bgLayer.className = 'bg-layer';
+            if(index === 0) bgLayer.classList.add('active');
+            bgLayer.innerHTML = `<img src="${art.src}" class="bg-img" alt="bg">`;
+            bgContainer.appendChild(bgLayer);
+        });
+
+        // 3. 生成画廊卡片 (包含克隆的)
+        displayArtworks.forEach((art, index) => {
             const item = document.createElement('div');
             item.className = 'gallery-item';
+            // 设置宽度和右边距
+            item.style.width = `${itemWidthVw}vw`;
+            item.style.marginRight = `${itemMarginVw}vw`;
+            
             item.innerHTML = `
                 <div class="art-card" onclick="openModal(${index})">
                     <img src="${art.src}" class="art-img" alt="Artwork" decoding="async">
@@ -362,23 +414,21 @@
                 </div>
             `;
             wrapper.appendChild(item);
-
-            // 背景
-            const bgLayer = document.createElement('div');
-            bgLayer.className = 'bg-layer';
-            if(index === 0) bgLayer.classList.add('active'); // 默认显示第一张
-            bgLayer.innerHTML = `<img src="${art.src}" class="bg-img" alt="bg">`;
-            bgContainer.appendChild(bgLayer);
         });
 
-        const totalVw = paddingLeftVw + (fixedArtworks.length * (itemWidthVw + itemMarginVw));
+        // 计算单次循环的总宽度 (像素)
+        const viewportWidth = window.innerWidth;
+        const oneSetWidthPx = (totalItemsCount * singleItemTotalVw) * (viewportWidth / 100);
+        
+        // 总宽度 = padding + 所有卡片宽度
+        const totalVw = paddingLeftVw + (displayArtworks.length * singleItemTotalVw);
         wrapper.style.width = `${totalVw}vw`;
 
         // === 动画与滚动 ===
         gsap.registerPlugin(ScrollTrigger);
 
         const lenis = new Lenis({
-            duration: 1.5,
+            duration: 1.2,
             easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
             direction: 'vertical', 
             smooth: true,
@@ -386,6 +436,7 @@
             touchMultiplier: 2
         });
 
+        // GSAP ScrollTrigger: 将垂直滚动映射为水平移动
         const scrollTween = gsap.to(wrapper, {
             x: () => -(wrapper.scrollWidth - window.innerWidth),
             ease: "none",
@@ -394,16 +445,26 @@
                 pin: true,
                 start: "top top",
                 end: () => `+=${wrapper.scrollWidth - window.innerWidth}`,
-                scrub: 0.5,
+                scrub: 0.5, // 稍微降低一点 scrub 让停止更跟手
                 invalidateOnRefresh: true,
-                // 背景切换核心逻辑
                 onUpdate: (self) => {
+                    // 背景切换逻辑 (取模 %)
                     const progress = self.progress;
-                    const index = Math.min(fixedArtworks.length - 1, Math.round(progress * (fixedArtworks.length - 1)));
+                    const totalScrollWidth = wrapper.scrollWidth - window.innerWidth;
+                    const currentX = progress * totalScrollWidth;
                     
+                    // 计算当前在第几张图 (基于像素位置近似计算)
+                    const itemFullWidthPx = (singleItemTotalVw * viewportWidth) / 100;
+                    // 减去 padding 偏移
+                    const effectiveX = Math.max(0, currentX - (paddingLeftVw * viewportWidth / 100) + (viewportWidth * 0.2)); 
+                    let index = Math.floor(effectiveX / itemFullWidthPx);
+                    
+                    // 取模，映射回原始 12 张图
+                    const realIndex = index % totalItemsCount;
+
                     const layers = document.querySelectorAll('.bg-layer');
                     layers.forEach((layer, i) => {
-                        if (i === index) {
+                        if (i === realIndex) {
                             if (!layer.classList.contains('active')) layer.classList.add('active');
                         } else {
                             if (layer.classList.contains('active')) layer.classList.remove('active');
@@ -418,37 +479,82 @@
             scrollTrigger: { trigger: ".gallery-container", start: "top top", end: () => `+=${wrapper.scrollWidth - window.innerWidth}`, scrub: 0 }
         });
 
-        let isAutoScrolling = false;
+        // === 自动播放与循环逻辑 ===
         let isGalleryStarted = false;
-        const autoScrollSpeed = isMobile ? 1.0 : 1.8; 
+        let isUserScrolling = false;
+        let autoScrollSpeed = isMobile ? 0.8 : 1.5; 
+        let scrollTimeout;
+        let snapTimeout;
 
         function raf(time) {
             lenis.raf(time);
-            if (isGalleryStarted && isAutoScrolling && !document.body.classList.contains('modal-open')) {
+            
+            // 核心逻辑：无限循环跳转
+            // 如果滚动位置超过了第一组的总长度，瞬间拉回起点
+            if (lenis.scroll >= oneSetWidthPx) {
+                lenis.scrollTo(lenis.scroll - oneSetWidthPx, { immediate: true });
+            }
+
+            // 自动播放
+            if (isGalleryStarted && !isUserScrolling && !document.body.classList.contains('modal-open')) {
                 lenis.scrollTo(lenis.scroll + autoScrollSpeed, { immediate: true });
             }
             requestAnimationFrame(raf);
         }
         requestAnimationFrame(raf);
 
+        // 监听用户交互
         ['pointerdown', 'touchstart', 'wheel'].forEach(evt => {
             window.addEventListener(evt, () => {
-                if(isGalleryStarted) isAutoScrolling = false;
+                if(isGalleryStarted) {
+                    isUserScrolling = true;
+                    clearTimeout(scrollTimeout);
+                    clearTimeout(snapTimeout); // 用户操作时清除吸附倒计时
+                }
             }, {passive: true});
         });
 
-        let scrollTimeout;
         lenis.on('scroll', () => {
             if(isGalleryStarted) {
-                isAutoScrolling = false;
+                // 滚动停止检测
                 clearTimeout(scrollTimeout);
                 scrollTimeout = setTimeout(() => {
                     if(!document.body.classList.contains('modal-open')) {
-                        isAutoScrolling = true;
+                        // 用户停止滚动后，先吸附，再恢复自动播放
+                        performSnap();
                     }
-                }, 2000); 
+                }, 100); // 停止 100ms 后触发逻辑
             }
         });
+
+        // === 核心：精准吸附 (Snap) ===
+        function performSnap() {
+            if (!isGalleryStarted) return;
+
+            // 计算一张图的像素宽度
+            const itemPx = (singleItemTotalVw * window.innerWidth) / 100;
+            const paddingPx = (paddingLeftVw * window.innerWidth) / 100;
+            
+            // 当前滚动位置
+            const currentScroll = lenis.scroll;
+            
+            // 计算最近的图片索引 (round)
+            // 目标位置 = index * itemPx
+            // 考虑到 padding，我们需要微调。实际上 lenis.scroll 0 对应第一张图居中位置稍偏左
+            // 简单算法：直接对 itemPx 取整
+            let targetIndex = Math.round(currentScroll / itemPx);
+            let targetScroll = targetIndex * itemPx;
+
+            // 平滑吸附过去
+            lenis.scrollTo(targetScroll, { 
+                duration: 1.0, 
+                easing: (t) => 1 - Math.pow(1 - t, 3), // cubicOut
+                onComplete: () => {
+                    // 吸附完成后，恢复自动慢速播放
+                    isUserScrolling = false; 
+                }
+            });
+        }
 
         // === 控制 ===
         const bgMusic = document.getElementById('bg-music');
@@ -459,7 +565,9 @@
             isGalleryStarted = true;
             document.body.classList.add('started');
             introSection.classList.add('hidden');
-            isAutoScrolling = true;
+            
+            // 启动时自动播放
+            isUserScrolling = false;
         }
 
         function toggleMusic() {
@@ -483,8 +591,11 @@
         let currentArtIndex = 0; 
 
         window.openModal = function(index) {
+            // 这里 index 可能是克隆后的索引（比如 12, 13...）
             currentArtIndex = index;
-            const data = fixedArtworks[index];
+            const realIndex = index % totalItemsCount;
+            const data = originalArtworks[realIndex];
+            
             mImg.src = data.src;
             mTitle.innerText = data.title[currentLang];
             mMeta.innerText = data.year;
@@ -492,14 +603,15 @@
             
             modal.classList.add('active');
             document.body.classList.add('modal-open');
-            lenis.stop();
+            lenis.stop(); // 停止底层滚动
         };
 
         function closeModal() {
             modal.classList.remove('active');
             document.body.classList.remove('modal-open');
-            lenis.start();
-            setTimeout(() => { if(isGalleryStarted) isAutoScrolling = true; }, 500);
+            lenis.start(); // 恢复底层滚动
+            // 延迟一点恢复自动播放，防止冲突
+            setTimeout(() => { if(isGalleryStarted) isUserScrolling = false; }, 500);
         }
         document.getElementById('close-modal-btn').onclick = closeModal;
         modal.onclick = (e) => {
