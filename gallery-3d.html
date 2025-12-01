@@ -2,363 +2,555 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Yanxu | 晨光画境</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/studio-freight/lenis@1.0.29/bundled/lenis.min.js"></script>
+    <script src="https://unpkg.com/@panzoom/panzoom@4.5.1/dist/panzoom.min.js"></script>
 
     <style>
         /* === 1. 晨光暖阳配色系统 === */
         :root {
-            /* 背景：暖杏色渐变 */
             --bg-gradient: linear-gradient(120deg, #fdfbfb 0%, #ffefd5 100%);
-            /* 文字：深咖色 */
             --text-primary: #5e4b35;
             --text-secondary: #8c7b66;
-            /* 强调色：淡金 */
             --accent-gold: #d4af37;
-            /* 玻璃质感 */
             --glass-bg: rgba(255, 255, 255, 0.65);
             --glass-border: rgba(255, 255, 255, 0.8);
             --glass-shadow: 0 15px 35px rgba(210, 180, 140, 0.25);
         }
 
-        body {
+        /* iOS 性能优化关键：防止横向溢出和弹性滚动 */
+        html, body {
             margin: 0; padding: 0;
+            width: 100%; height: 100%;
             background: var(--bg-gradient);
             color: var(--text-primary);
             font-family: "Songti SC", "Noto Serif SC", serif;
-            overflow-x: hidden;
+            overflow: hidden; /* 关键：配合Lenis使用 */
+            position: fixed; /* 锁定body防止iOS弹性效果 */
+        }
+        
+        /* 允许Lenis接管的容器滚动 */
+        .smooth-scroll-wrapper {
+             width: 100%; height: 100%;
+             overflow-y: auto;
+             overflow-x: hidden;
+             -webkit-overflow-scrolling: touch;
         }
 
         ::-webkit-scrollbar { width: 0px; background: transparent; }
+        * { -webkit-tap-highlight-color: transparent; outline: none; }
 
-        /* === 2. 开场文字 === */
+        /* === 2. 开场与控制 === */
         .intro-section {
             height: 100vh;
             display: flex; flex-direction: column;
             justify-content: center; align-items: center;
-            text-align: center; z-index: 10; relative;
+            text-align: center; z-index: 200; position: absolute; top:0; left:0; width:100%;
+            background: var(--bg-gradient);
+            transition: opacity 0.8s ease;
         }
+        .intro-section.hidden { opacity: 0; pointer-events: none; }
+        
         .intro-title { 
             font-size: 8vw; font-weight: bold; letter-spacing: 10px; margin: 0; 
             background: linear-gradient(to right, #8b5e3c, #d4af37);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            opacity: 0; transform: translateY(50px);
         }
-        .intro-subtitle { font-size: 1.2rem; color: var(--text-secondary); margin-top: 20px; letter-spacing: 5px; opacity: 0; }
-        .scroll-hint { position: absolute; bottom: 50px; font-size: 12px; color: var(--text-secondary); opacity: 0.6; animation: float 3s infinite ease-in-out; }
+        .intro-subtitle { font-size: 1.2rem; color: var(--text-secondary); margin-top: 20px; letter-spacing: 5px; }
+        
+        /* 开始按钮 (用于触发音乐播放) */
+        .start-btn {
+            margin-top: 50px;
+            padding: 15px 40px;
+            border: 2px solid var(--text-primary);
+            color: var(--text-primary);
+            font-size: 14px; letter-spacing: 3px;
+            background: transparent;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .start-btn:hover { background: var(--text-primary); color: #fff; }
 
+        .scroll-hint { position: absolute; bottom: 50px; font-size: 12px; color: var(--text-secondary); opacity: 0; transition: opacity 0.5s; animation: float 3s infinite ease-in-out; }
+        body.started .scroll-hint { opacity: 0.6; }
         @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+
+        /* 音频控制隐形 */
+        #bg-music { display: none; }
+        
+        /* 音乐控制按钮 (可选，显示在右下角) */
+        .music-control {
+            position: fixed; bottom: 20px; right: 20px; z-index: 150;
+            width: 40px; height: 40px; border-radius: 50%;
+            background: var(--glass-bg); border: 1px solid var(--glass-border);
+            display: flex; justify-content: center; align-items: center;
+            cursor: pointer; opacity: 0; transition: opacity 0.5s;
+        }
+        body.started .music-control { opacity: 1; }
+        .music-control svg { width: 20px; height: 20px; fill: var(--text-primary); }
+        .music-control.muted svg { fill: var(--text-secondary); opacity: 0.5; }
+
 
         /* === 3. 画廊轨道 === */
         .gallery-wrapper {
-            /* 宽度由JS动态计算 */
             height: 100vh;
             display: flex;
-            align-items: center; /* 关键：垂直居中，高度统一 */
+            align-items: center;
             flex-wrap: nowrap;
-            padding-left: 10vw; /* 起始留白 */
+            padding-left: 15vw; /* 起始留白加大 */
+            /* iOS 性能优化：强制 GPU */
             will-change: transform;
+            transform: translateZ(0);
+            backface-visibility: hidden;
         }
 
         .gallery-item {
-            /* 每张画的容器宽度 */
-            width: 50vw; 
-            height: 60vh; /* 统一高度 */
+            /* 修改布局方式为纵向，左对齐 */
             display: flex;
+            flex-direction: column;
+            align-items: flex-start; 
             justify-content: center;
-            align-items: center;
-            margin-right: 8vw; /* 画作间距 */
+            width: 50vw; 
+            height: 100%; /* 占满高度以便定位 */
+            margin-right: 12vw; /* 增加间距 */
             flex-shrink: 0;
             position: relative;
         }
 
-        /* 画框设计：晨光风格 */
+        /* 画框设计 */
         .art-card {
             position: relative;
-            width: 100%; height: 100%;
+            width: 100%;
+            height: 60vh; /* 固定画框高度 */
             overflow: hidden;
             cursor: pointer;
-            box-shadow: 0 20px 60px rgba(139, 69, 19, 0.15); /* 暖色投影 */
-            transition: transform 0.5s cubic-bezier(0.25, 1, 0.5, 1);
-            background: white; /* 像装裱的白底 */
-            padding: 15px; /* 留白边框 */
+            box-shadow: 0 20px 50px rgba(139, 69, 19, 0.15);
+            transition: transform 0.5s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.5s ease;
+            background: white;
+            padding: 12px; /* 边框留白 */
+            /* iOS 优化 */
+            transform: translateZ(0);
         }
-        .art-card:hover { transform: scale(1.03); box-shadow: 0 30px 70px rgba(139, 69, 19, 0.25); }
+        .art-card:hover { transform: scale(1.02); box-shadow: 0 30px 60px rgba(139, 69, 19, 0.2); }
 
         .art-img {
             width: 100%; height: 100%;
             object-fit: cover;
-            /* 视差效果需配合 overflow: hidden */
-            transition: transform 0.1s; 
+            transition: transform 0.8s ease;
+            /* iOS 优化：异步解码 */
+            content-visibility: auto;
         }
+        .art-card:hover .art-img { transform: scale(1.05); }
 
-        /* 列表页的信息 (悬浮在画框下方) */
+        /* 列表页的信息 (修改位置到左下方) */
         .art-preview-info {
-            position: absolute; bottom: -50px; left: 0; text-align: left;
-            opacity: 0.7; transition: opacity 0.3s;
+            /* 不再是绝对定位，而是自然流式布局在图片下方 */
+            margin-top: 25px;
+            margin-left: 5px;
+            text-align: left;
+            opacity: 0.9; /* 默认显示 */
         }
-        .gallery-item:hover .art-preview-info { opacity: 1; }
-        .art-preview-title { font-size: 18px; font-weight: bold; margin: 0; letter-spacing: 1px; }
-        .art-preview-meta { font-size: 12px; color: var(--text-secondary); margin-top: 5px; font-family: sans-serif; }
+        .art-preview-title { font-size: 20px; font-weight: bold; margin: 0 0 8px 0; letter-spacing: 2px; color: var(--text-primary); }
+        .art-preview-meta { font-size: 13px; color: var(--text-secondary); font-family: sans-serif; letter-spacing: 1px;}
+        .art-preview-meta span { margin-right: 15px; }
 
-        /* === 4. 详情弹窗 (晨光玻璃风格) === */
+        /* === 4. 详情弹窗 === */
         .modal {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(255, 245, 235, 0.6); /* 暖色半透明遮罩 */
-            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            background: rgba(255, 245, 235, 0.7);
+            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
             z-index: 999;
             display: flex; justify-content: center; align-items: center;
             opacity: 0; pointer-events: none;
-            transition: opacity 0.5s ease;
+            transition: opacity 0.4s ease;
         }
         .modal.active { opacity: 1; pointer-events: auto; }
 
-        /* 弹窗内容容器 */
         .modal-content-box {
             position: relative;
-            width: 95vw; height: 92vh; max-width: 1600px;
+            width: 92vw; height: 90vh; max-width: 1400px;
             background: var(--glass-bg);
             border: 1px solid var(--glass-border);
-            border-radius: 20px;
+            border-radius: 16px;
             box-shadow: var(--glass-shadow);
-            padding: 20px 20px 50px 20px; /* 底部留空给热度 */
+            padding: 30px;
             box-sizing: border-box;
             display: flex; flex-direction: column; align-items: center;
-            transform: scale(0.95); transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+            transform: scale(0.96); transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
         }
         .modal.active .modal-content-box { transform: scale(1); }
 
-        /* 大图 */
+        /* 弹窗大图 (增加点击提示) */
+        .modal-img-wrapper {
+            position: relative;
+            max-width: 100%; max-height: 70vh;
+            box-shadow: 0 10px 30px rgba(100, 70, 50, 0.1);
+            cursor: zoom-in; /* 提示可放大 */
+            overflow: hidden;
+        }
         .modal-img {
-            max-width: 100%; max-height: 75vh;
-            box-shadow: 0 10px 40px rgba(100, 70, 50, 0.15);
-            object-fit: contain;
+            width: auto; height: auto;
+            max-width: 100%; max-height: 70vh;
+            object-fit: contain; display: block;
+        }
+        .zoom-hint {
+            position: absolute; bottom: 10px; right: 10px;
+            background: rgba(0,0,0,0.5); color: #fff;
+            padding: 4px 8px; font-size: 12px; border-radius: 4px;
+            pointer-events: none; opacity: 0.7; font-family: sans-serif;
         }
 
-        /* 简介区域 */
         .modal-text {
-            margin-top: 20px; text-align: center;
-            max-width: 800px;
-            color: var(--text-primary);
-            max-height: 12vh; overflow-y: auto; /* 超长滚动 */
+            margin-top: 25px; text-align: center;
+            max-width: 700px; color: var(--text-primary);
+            flex-grow: 1; overflow-y: auto;
         }
-        .modal-text::-webkit-scrollbar { width: 4px; }
-        .modal-text::-webkit-scrollbar-thumb { background: rgba(139,69,19,0.2); border-radius: 4px; }
+        .modal-title { font-size: 26px; font-weight: bold; letter-spacing: 3px; margin: 0 0 10px 0; }
+        .modal-meta { font-size: 13px; color: var(--text-secondary); margin-bottom: 15px; font-family: sans-serif; }
+        .modal-desc { font-size: 15px; line-height: 1.7; opacity: 0.9; text-align: justify; }
 
-        .modal-title { font-size: 28px; font-weight: bold; letter-spacing: 3px; margin: 0 0 5px 0; }
-        .modal-desc { font-size: 14px; line-height: 1.6; opacity: 0.9; }
-
-        /* 左下角浏览人数 */
-        .view-badge {
-            position: absolute; bottom: 20px; left: 30px;
-            display: flex; align-items: center; gap: 8px;
-            font-size: 13px; color: var(--text-secondary); font-family: sans-serif; font-weight: bold;
-        }
-        .view-badge svg { width: 18px; height: 18px; fill: var(--text-secondary); opacity: 0.8; }
-
-        /* 关闭按钮 */
         .close-btn {
             position: absolute; top: 20px; right: 20px;
-            width: 40px; height: 40px; border-radius: 50%;
+            width: 44px; height: 44px; border-radius: 50%;
             background: rgba(255,255,255,0.5); border: 1px solid rgba(255,255,255,0.8);
-            color: var(--text-primary); font-size: 20px;
+            color: var(--text-primary); font-size: 22px;
             display: flex; justify-content: center; align-items: center;
-            cursor: pointer; transition: all 0.3s;
+            cursor: pointer; transition: all 0.3s; z-index: 10;
         }
-        .close-btn:hover { background: #fff; transform: rotate(90deg); box-shadow: 0 0 15px rgba(212, 175, 55, 0.4); }
+        .close-btn:hover { background: #fff; transform: rotate(90deg); }
+
+        /* === 5. 全屏缩放层 (新增) === */
+        .fullscreen-zoom-modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); z-index: 2000;
+            display: flex; justify-content: center; align-items: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+        }
+        .fullscreen-zoom-modal.active { opacity: 1; pointer-events: auto; }
+        .fullscreen-zoom-container { width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; overflow: hidden; }
+        .fullscreen-img { max-width: none; max-height: none; /* 让Panzoom控制 */ cursor: grab; }
+        .fullscreen-img:active { cursor: grabbing; }
+        .fullscreen-close {
+            position: absolute; top: 30px; right: 30px;
+            color: rgba(255,255,255,0.8); font-size: 30px; cursor: pointer; z-index: 2001;
+        }
 
         /* 进度条 */
         .progress-bar {
-            position: fixed; bottom: 0; left: 0; height: 3px; background: var(--accent-gold);
+            position: fixed; bottom: 0; left: 0; height: 4px; background: linear-gradient(to right, var(--accent-gold), #8b5e3c);
             width: 0%; z-index: 100;
+            transition: width 0.1s linear; /* iOS 优化平滑度 */
         }
         
-        /* 暂停自动播放按钮 (可选) */
-        .play-status {
-            position: fixed; bottom: 20px; right: 20px;
-            font-size: 10px; color: var(--text-secondary); opacity: 0.5;
-            letter-spacing: 1px; z-index: 50;
+        /* 移动端适配调整 */
+        @media (max-width: 768px) {
+            .intro-title { font-size: 15vw; letter-spacing: 5px; }
+            .intro-subtitle { font-size: 1rem; letter-spacing: 3px; }
+            .gallery-wrapper { padding-left: 10vw; }
+            .gallery-item { width: 80vw; margin-right: 8vw; }
+            .art-card { height: 55vh; }
+            .art-preview-title { font-size: 18px; }
+            .modal-content-box { width: 95vw; height: 95vh; padding: 20px; }
+            .modal-title { font-size: 22px; }
+            .modal-desc { font-size: 14px; }
         }
 
     </style>
 </head>
 <body>
 
+    <audio id="bg-music" loop preload="auto">
+        <source src="assets/music/还是会想你曼波.mp3" type="audio/mpeg">
+        您的浏览器不支持 audio 标签。
+    </audio>
+    
     <div class="progress-bar"></div>
-    <div class="play-status">AUTO SCROLLING</div>
+
+    <div class="music-control" id="music-toggle" onclick="toggleMusic()">
+        <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+    </div>
+    
+    <div class="fullscreen-zoom-modal" id="fs-modal">
+        <div class="fullscreen-close" onclick="closeFullscreen()">✕</div>
+        <div class="fullscreen-container">
+            <img class="fullscreen-img" id="fs-img" src="" alt="">
+        </div>
+    </div>
 
     <div class="modal" id="detail-modal">
         <div class="modal-content-box">
-            <div class="close-btn" id="close-btn">✕</div>
-            <img src="" alt="" class="modal-img" id="modal-img">
+            <div class="close-btn" id="close-modal-btn">✕</div>
+            <div class="modal-img-wrapper" onclick="openFullscreen()">
+                <img src="" alt="" class="modal-img" id="modal-img">
+                <div class="zoom-hint">点击全屏查看细节</div>
+            </div>
             
             <div class="modal-text">
                 <div class="modal-title" id="m-title">标题</div>
+                <div class="modal-meta" id="m-meta">年份 · 尺寸</div>
                 <div class="modal-desc" id="m-desc">作品简介...</div>
-            </div>
-
-            <div class="view-badge">
-                <svg viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
-                <span id="m-views">0</span>
             </div>
         </div>
     </div>
 
-    <section class="intro-section">
+    <section class="intro-section" id="intro">
         <h1 class="intro-title">YANXU</h1>
         <p class="intro-subtitle">CHINESE PAINTING · 晨光画境</p>
-        <div class="scroll-hint">SCROLL TO EXPLORE</div>
+        <button class="start-btn" onclick="startGallery()">ENTER GALLERY / 进入画境</button>
     </section>
+    
+    <div class="scroll-hint">SCROLL or WAIT TO EXPLORE</div>
 
-    <div class="gallery-wrapper" id="gallery-wrapper">
-        </div>
+    <div class="smooth-scroll-wrapper">
+        <div class="gallery-wrapper" id="gallery-wrapper">
+            </div>
+    </div>
 
     <script>
-        // === 1. 数据配置 (模拟50幅画) ===
-        const artworks = [];
-        const baseCount = 12; // 你有 eg1.jpg ~ eg12.jpg
-        
-        // 生成 50 个数据
-        for(let i=1; i<=50; i++) {
-            // 循环使用 1-12 的图片
-            const imgIndex = (i - 1) % baseCount + 1;
-            
-            // 生成随机浏览数
-            const views = Math.floor(Math.random() * 20000) + 1200;
+        // === 1. 数据配置 (12幅固定作品) ===
+        // 你可以在这里修改每一幅画的信息
+        const fixedArtworks = [
+            { id: 1, src: "assets/images/gallery/eg1.jpg", title: "晨光熹微 No.1", year: "2023", size: "138x69cm", desc: "笔墨在晨光中苏醒，捕捉第一缕阳光穿透云雾的瞬间。画面运用了传统的积墨法与现代的光影构成，试图在混沌中寻找秩序与希望。" },
+            { id: 2, src: "assets/images/gallery/eg2.jpg", title: "山间清风 No.2", year: "2023", size: "69x69cm", desc: "以清透的淡彩与水墨交融，表现山间清风拂过林梢的动态。留白的处理旨在营造空灵幽远的意境，强调人与自然的和谐共生。" },
+            { id: 3, src: "assets/images/gallery/eg3.jpg", title: "古木幽鸣 No.3", year: "2022", size: "180x97cm", desc: "聚焦于古树的肌理与沧桑感。通过焦墨与宿墨的对比，强化了古木盘根错节的生命力，仿佛能听到历史的回响。" },
+            { id: 4, src: "assets/images/gallery/eg4.jpg", title: "溪山行旅 No.4", year: "2023", size: "138x34cm", desc: "向传统宋画致敬的长卷构图。在狭长的空间中安排了多重透视，引导观者视线随溪流而上，体验可行、可望、可游的境界。" },
+            { id: 5, src: "assets/images/gallery/eg5.jpg", title: "云蒸霞蔚 No.5", year: "2024", size: "90x90cm", desc: "大胆运用朱砂与石青色，描绘日出时分云蒸霞蔚的壮观景象。色彩的碰撞与融合，旨在表现自然界瞬息万变的磅礴能量。" },
+            { id: 6, src: "assets/images/gallery/eg6.jpg", title: "静谧之境 No.6", year: "2022", size: "69x45cm", desc: "一幅极简主义风格的小品。大部分画面留白，仅在角落以简练的笔触勾勒出一石一草，追求“少即是多”的禅意表达。" },
+            { id: 7, src: "assets/images/gallery/eg7.jpg", title: "雨后初晴 No.7", year: "2023", size: "138x69cm", desc: "利用湿画法表现雨后山石润泽、空气清新的质感。画面中水气氤氲，仿佛能闻到泥土的芬芳，展现了江南烟雨的独特韵味。" },
+            { id: 8, src: "assets/images/gallery/eg8.jpg", title: "秋山红叶 No.8", year: "2023", size: "120x120cm", desc: "满幅构图，以热烈的色彩表现秋山的丰富层次。墨色作为骨架，承载着斑斓的色彩，旨在传达秋天丰饶而深沉的情绪。" },
+            { id: 9, src: "assets/images/gallery/eg9.jpg", title: "寒江独钓 No.9", year: "2022", size: "69x69cm", desc: "取材于传统诗意，但以现代构成手法重新诠释。画面极度空旷，孤舟蓑笠翁被提炼为一个符号，强调孤独与坚守的精神内核。" },
+            { id: 10, src: "assets/images/gallery/eg10.jpg", title: "墨韵流光 No.10", year: "2024", size: "180x97cm", desc: "探索水墨材料本身的流动性与偶然性。在创作过程中大量运用泼墨与冲水技法，让墨色在纸上自由流淌，形成不可复制的抽象肌理。" },
+            { id: 11, src: "assets/images/gallery/eg11.jpg", title: "春山烟雨 No.11", year: "2023", size: "138x69cm", desc: "以温润的笔触描绘春山的柔美。淡绿与浅赭色相互晕染，营造出一种朦胧、诗意的梦境感，展现了万物复苏的生机。" },
+            { id: 12, src: "assets/images/gallery/eg12.jpg", title: "岩壑藏幽 No.12", year: "2022", size: "200x100cm", desc: "巨幅作品，强调山石的体量感与压迫感。通过繁复的皴法与深沉的墨色，构建了一个深邃、神秘的岩壑世界，引人探幽。" }
+        ];
 
-            artworks.push({
-                src: `assets/images/gallery/eg${imgIndex}.jpg`,
-                title: `作品 No.${i}`,
-                year: `202${i%5}`,
-                size: "138x69cm",
-                views: views.toLocaleString(),
-                desc: "这里是作品简介的占位符。晨光熹微，水墨交融。艺术家通过对传统笔墨的现代解构，展现了独特的东方韵味与人文关怀。画面细腻，意境深远。"
-            });
-        }
-
-        // === 2. 动态生成 DOM ===
+        // === 2. 初始化与DOM生成 ===
         const wrapper = document.getElementById('gallery-wrapper');
-        // 计算宽度：每张图 50vw + 间距 8vw
-        wrapper.style.width = `${artworks.length * 58 + 50}vw`;
+        // 计算总宽度：12张图 * (50vw宽度 + 12vw间距) + 起始padding
+        // 移动端需要重新计算
+        const isMobile = window.innerWidth < 768;
+        const itemWidthVw = isMobile ? 80 : 50;
+        const itemMarginVw = isMobile ? 8 : 12;
+        const startPaddingVw = isMobile ? 10 : 15;
+        const totalWidthVw = fixedArtworks.length * (itemWidthVw + itemMarginVw) + startPaddingVw + 10; // +10为了留点余地
+        wrapper.style.width = `${totalWidthVw}vw`;
 
-        artworks.forEach((art) => {
+        fixedArtworks.forEach((art, index) => {
             const item = document.createElement('div');
             item.className = 'gallery-item';
-            
-            // 存数据到 data 属性，方便点击时读取
+            // decoding="async" 对iOS性能很重要
             item.innerHTML = `
                 <div class="art-card" 
-                     onclick="openModal('${art.src}', '${art.title}', '${art.desc}', '${art.views}')">
-                    <img src="${art.src}" class="art-img" alt="${art.title}">
+                     onclick="openModal(${index})">
+                    <img src="${art.src}" class="art-img" alt="${art.title}" decoding="async">
                 </div>
                 <div class="art-preview-info">
                     <h2 class="art-preview-title">${art.title}</h2>
-                    <p class="art-preview-meta">${art.year} · ${art.size}</p>
+                    <p class="art-preview-meta">
+                        <span>${art.year}</span>
+                        <span>${art.size}</span>
+                    </p>
                 </div>
             `;
             wrapper.appendChild(item);
         });
 
-        // === 3. 动画逻辑 (GSAP + ScrollTrigger) ===
+        // === 3. 核心控制逻辑（音乐与状态） ===
+        const bgMusic = document.getElementById('bg-music');
+        const introSection = document.getElementById('intro');
+        const musicToggle = document.getElementById('music-toggle');
+        let isGalleryStarted = false;
+        let isAutoScrolling = false; // 初始不自动滚动
+
+        // 用户点击开始按钮
+        function startGallery() {
+            if (isGalleryStarted) return;
+            isGalleryStarted = true;
+            document.body.classList.add('started');
+            
+            // 隐藏开场页
+            introSection.classList.add('hidden');
+            
+            // 播放音乐 (必须在用户交互事件中调用)
+            bgMusic.volume = 0.6;
+            bgMusic.play().then(() => {
+                // 音乐播放成功，开始自动滚动
+                isAutoScrolling = true; 
+            }).catch(error => {
+                console.log("Autoplay prevented by browser, user needs to interact gently:", error);
+                // 即使音乐没播成功（极少数情况），也开始滚动
+                isAutoScrolling = true; 
+            });
+
+            // 移除开场DOM以释放资源 (可选，延迟后)
+            setTimeout(() => { introSection.style.display = 'none'; }, 1000);
+        }
+
+        // 音乐开关
+        function toggleMusic() {
+            if (bgMusic.paused) {
+                bgMusic.play();
+                musicToggle.classList.remove('muted');
+            } else {
+                bgMusic.pause();
+                musicToggle.classList.add('muted');
+            }
+        }
+
+
+        // === 4. 动画与滚动逻辑 (GSAP + Lenis) ===
         gsap.registerPlugin(ScrollTrigger);
 
-        // 开场动画
-        const tl = gsap.timeline();
-        tl.to(".intro-title", { opacity: 1, y: 0, duration: 1.5, ease: "power4.out" })
-          .to(".intro-subtitle", { opacity: 1, duration: 1, delay: -1 });
-
-        // 横向滚动转换
         const sections = gsap.utils.toArray(".gallery-item");
         
+        // 横向滚动核心动画
         const scrollTween = gsap.to(sections, {
-            xPercent: -100 * (sections.length - 1), 
+            // xPercent计算：移动总距离 = (单个宽度百分比 + 间距百分比) * (数量 - 1) / 单个宽度百分比 * 100... 
+            // 简易计算：让最后一个元素刚好到达视口左侧。
+            // 更精确的做法是计算实际像素，但这里用百分比在响应式下更稳定。
+            // 我们让整个 wrapper 向左移动，直到最后一个 item 显示出来。
+            x: () => -(wrapper.scrollWidth - window.innerWidth) + "px",
             ease: "none",
             scrollTrigger: {
                 trigger: ".gallery-wrapper",
-                pin: true,
-                scrub: 1, // 增加阻尼感，更平滑
-                end: () => "+=" + document.querySelector(".gallery-wrapper").offsetWidth
+                pin: true, // 固定住 wrapper
+                scrub: 0.5, // 增加一点阻尼，iOS上更顺滑
+                // 滚动长度：设置为 wrapper 实际宽度的 1.2 倍，控制滚动速度感
+                end: () => "+=" + wrapper.scrollWidth * 1.2,
+                invalidateOnRefresh: true // 窗口变化时重新计算
             }
         });
 
-        // 更新进度条
+        // 进度条动画
         gsap.to(".progress-bar", {
             width: "100%",
             ease: "none",
             scrollTrigger: {
                 trigger: ".gallery-wrapper",
                 start: "top top",
-                end: "bottom bottom",
+                // 使用与上面相同的 end 值来同步
+                end: () => "+=" + wrapper.scrollWidth * 1.2,
                 scrub: 0
             }
         });
 
-        // === 4. 平滑滚动 & 自动播放 (Auto Scroll) ===
+        // Lenis 平滑滚动配置 (针对 iOS 调优)
         const lenis = new Lenis({
-            duration: 1.5, // 滚动惯性
+            duration: 1.2, // 滚动持续时间
             easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-            smoothWheel: true
+            direction: 'vertical', 
+            smooth: true,
+            mouseMultiplier: 1, // 鼠标滚轮灵敏度
+            smoothTouch: true,  // 启用移动端平滑
+            touchMultiplier: 1.5, // 移动端触控灵敏度
+            infinite: false,
         });
 
-        let isAutoScrolling = true; // 自动播放开关
-        let autoScrollSpeed = 1.5;  // 自动播放速度 (像素/帧)
+        // 自动滚动速度 (像素/帧)，iOS上不宜过快
+        let autoScrollSpeed = isMobile ? 0.8 : 1.2; 
 
         function raf(time) {
             lenis.raf(time);
-            
-            // 核心：自动滚动逻辑
-            // 如果开启了自动且弹窗没打开
-            if (isAutoScrolling && !document.body.classList.contains('modal-open')) {
-                // 模拟向下滚动，这会触发 ScrollTrigger 的横向动画
-                window.scrollBy(0, autoScrollSpeed);
+            // 核心：自动滚动逻辑 (仅当画廊启动、未打开弹窗且允许自动滚动时)
+            if (isGalleryStarted && isAutoScrolling && !document.body.classList.contains('modal-open')) {
+                // 使用 lenis.scrollTo 进行更平滑的增量滚动，而不是 window.scrollBy
+                // lock: true 防止在自动滚动时用户操作冲突导致抖动 (但可能会牺牲一点交互性，视情况调整)
+                lenis.scrollTo(lenis.scroll + autoScrollSpeed, { immediate: true, lock: false });
             }
-            
             requestAnimationFrame(raf);
         }
         requestAnimationFrame(raf);
 
-        // 交互逻辑：鼠标放上去暂停，移开继续
-        // 或者：用户手动滚动时，其实 scrollBy 会叠加，感觉就像“加速”
-        // 这里做一个简单的处理：鼠标悬停在画廊上时，变慢或暂停，方便点击
-        wrapper.addEventListener('mouseenter', () => { isAutoScrolling = false; document.querySelector('.play-status').innerText = "PAUSED"; });
-        wrapper.addEventListener('mouseleave', () => { isAutoScrolling = true; document.querySelector('.play-status').innerText = "AUTO SCROLLING"; });
+        // 交互优化：鼠标/手指按住时暂停自动播放
+        const scrollContainer = document.querySelector('.smooth-scroll-wrapper');
+        scrollContainer.addEventListener('pointerdown', () => { isAutoScrolling = false; });
+        scrollContainer.addEventListener('pointerup', () => { if(isGalleryStarted) isAutoScrolling = true; });
+        // 兼容移动端 touch 事件
+        scrollContainer.addEventListener('touchstart', () => { isAutoScrolling = false; }, {passive: true});
+        scrollContainer.addEventListener('touchend', () => { if(isGalleryStarted) isAutoScrolling = true; });
 
 
-        // === 5. 弹窗逻辑 ===
+        // === 5. 详情弹窗逻辑 ===
         const modal = document.getElementById('detail-modal');
         const mImg = document.getElementById('modal-img');
         const mTitle = document.getElementById('m-title');
+        const mMeta = document.getElementById('m-meta');
         const mDesc = document.getElementById('m-desc');
-        const mViews = document.getElementById('m-views');
-        const closeBtn = document.getElementById('close-btn');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+        let currentArtIndex = 0;
 
-        window.openModal = function(src, title, desc, views) {
-            mImg.src = src;
-            mTitle.innerText = title;
-            mDesc.innerText = desc;
-            mViews.innerText = views;
+        // 打开详情窗
+        window.openModal = function(index) {
+            currentArtIndex = index;
+            const data = fixedArtworks[index];
+            mImg.src = data.src;
+            mTitle.innerText = data.title;
+            mMeta.innerText = `${data.year} · ${data.size}`;
+            mDesc.innerText = data.desc;
             
             modal.classList.add('active');
-            document.body.classList.add('modal-open'); // 禁止自动滚动
-            lenis.stop(); // 禁止背景滚动
+            document.body.classList.add('modal-open'); // 禁止自动滚动标记
+            lenis.stop(); // 彻底禁止背景滚动
         };
 
+        // 关闭详情窗
         function closeModal() {
             modal.classList.remove('active');
             document.body.classList.remove('modal-open');
-            lenis.start();
-            // 稍微延迟一点恢复自动滚动，防止立刻跳动
-            setTimeout(() => { isAutoScrolling = true; }, 500);
+            lenis.start(); // 恢复背景滚动
+            // 稍微延迟恢复自动滚动，防止跳动
+            setTimeout(() => { if(isGalleryStarted) isAutoScrolling = true; }, 500);
         }
 
-        closeBtn.onclick = closeModal;
+        closeModalBtn.onclick = closeModal;
         modal.onclick = (e) => {
+            // 点击内容框外部关闭
             if(e.target === modal || e.target.classList.contains('modal-content-box')) closeModal();
         };
+
+
+        // === 6. 全屏缩放逻辑 (Panzoom) ===
+        const fsModal = document.getElementById('fs-modal');
+        const fsContainer = document.querySelector('.fullscreen-container');
+        const fsImg = document.getElementById('fs-img');
+        let panzoomInstance = null;
+
+        // 打开全屏
+        window.openFullscreen = function() {
+            // 获取当前详情窗里的图片src
+            fsImg.src = mImg.src;
+            fsModal.classList.add('active');
+            
+            // 初始化 Panzoom
+            // 稍微延迟确保图片加载且容器可见
+            setTimeout(() => {
+                 panzoomInstance = Panzoom(fsContainer, {
+                    maxScale: 4, // 最大放大倍数
+                    minScale: 0.8,
+                    contain: 'outside', // 限制图片不拖出边界
+                    startScale: 1
+                });
+                // 启用鼠标滚轮缩放
+                fsContainer.parentElement.addEventListener('wheel', panzoomInstance.zoomWithWheel);
+            }, 100);
+        }
+
+        // 关闭全屏
+        window.closeFullscreen = function() {
+            fsModal.classList.remove('active');
+            // 销毁实例并清理事件，防止内存泄漏
+            if (panzoomInstance) {
+                fsContainer.parentElement.removeEventListener('wheel', panzoomInstance.zoomWithWheel);
+                panzoomInstance.destroy();
+                panzoomInstance = null;
+            }
+            // 清空图片src防止下次打开闪烁
+            setTimeout(() => { fsImg.src = ''; }, 300);
+        }
 
     </script>
 </body>
