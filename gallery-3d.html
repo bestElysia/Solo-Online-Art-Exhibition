@@ -10,83 +10,73 @@
     <script src="https://cdn.jsdelivr.net/gh/studio-freight/lenis@1.0.29/bundled/lenis.min.js"></script>
 
     <style>
-        /* === 1. 基础设置 === */
+        /* === 1. 基础设置与晨光主题 === */
         :root {
-            --text-primary: #fff;
-            --text-secondary: rgba(255, 255, 255, 0.7);
-            --accent-gold: #d4af37;
+            --text-primary: #2c1e12; /* 深褐灰色，适合晨光背景 */
+            --text-secondary: rgba(44, 30, 18, 0.6);
+            --accent-gold: #b8860b; /* 暗金色强调 */
+            --glass-border: rgba(255, 255, 255, 0.6);
+            --glass-bg: rgba(255, 255, 255, 0.35);
+            --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
         }
 
         html, body {
             margin: 0; padding: 0;
-            width: 100%; 
-            background: #111;
-            color: var(--text-primary);
+            width: 100%; height: 100%;
             font-family: "Songti SC", "Noto Serif SC", serif;
             -webkit-font-smoothing: antialiased;
-            overflow-x: hidden;
+            overflow: hidden; /* 由Lenis接管滚动 */
             touch-action: pan-y;
+            color: var(--text-primary);
+        }
+
+        /* === 2. 晨光流体背景 (纯CSS动画) === */
+        .morning-bg {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1;
+            /* 模拟晨曦：雾白 -> 柔粉 -> 淡蓝 -> 暖金 */
+            background: linear-gradient(-45deg, #fdfbfb, #fff1eb, #ace0f9, #fff1eb);
+            background-size: 400% 400%;
+            animation: gradientFlow 15s ease infinite;
+        }
+
+        @keyframes gradientFlow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* 添加一点噪点纹理，增加纸张感 */
+        .noise-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1; opacity: 0.4; pointer-events: none;
+            background: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1MDAiIGhlaWdodD0iNTAwIj48ZmlsdGVyIGlkPSJub2lzZSI+PGZlVHVyYnVsZW5jZSB0eXBlPSJmcmFjdGFsTm9pc2UiIGJhc2VGcmVxdWVuY3k9IjAuNjUiIG51bU9jdGF2ZXM9IjMiIHN0aXRjaFRpbGVzPSJzdGl0Y2giLz48L2ZpbHRlcj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWx0ZXI9InVybCgjbm9pc2UpIiBvcGFjaXR5PSIwLjUiLz48L3N2Zz4=');
         }
 
         ::-webkit-scrollbar { width: 0px; background: transparent; }
         * { -webkit-tap-highlight-color: transparent; outline: none; box-sizing: border-box; }
 
-        /* === 2. 动态背景层 === */
-        .dynamic-bg-container {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 0; 
-            pointer-events: none; 
-            overflow: hidden;
-        }
-        
-        .bg-overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.5); /* 稍微调亮一点点，让背景细节可见 */
-            z-index: 2;
-        }
-
-        .bg-layer {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            opacity: 0; transition: opacity 1.2s ease-in-out; /* 更柔和的过渡 */
-            z-index: 1;
-        }
-        .bg-layer.active { opacity: 1; }
-        
-        .bg-img {
-            width: 100%; height: 100%; object-fit: cover;
-            filter: blur(40px) saturate(1.1) brightness(0.8);
-            transform: scale(1.1);
-        }
-
         /* === 3. 右上角控制区 === */
         .controls-area {
-            position: fixed; top: 20px; right: 20px;
-            z-index: 800;
+            position: fixed; top: 25px; right: 25px; z-index: 800;
             display: flex; gap: 15px; align-items: center;
         }
 
         .control-btn {
-            width: 36px; height: 36px; border-radius: 50%;
-            background: rgba(255, 255, 255, 0.15); 
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            width: 40px; height: 40px; border-radius: 50%;
+            background: rgba(255, 255, 255, 0.4); 
+            border: 1px solid rgba(255, 255, 255, 0.8);
             display: flex; justify-content: center; align-items: center;
-            cursor: pointer; opacity: 0; transition: all 0.3s;
-            backdrop-filter: blur(5px);
-            font-size: 12px; font-weight: bold; color: #fff;
-            font-family: sans-serif;
+            cursor: pointer; opacity: 0; transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+            font-size: 12px; font-weight: bold; color: var(--text-primary);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
         }
-        body.started .control-btn { opacity: 1; }
-        .control-btn:hover { background: rgba(255, 255, 255, 0.3); transform: scale(1.1); }
+        body.started .control-btn { opacity: 1; transform: scale(1); }
+        .control-btn:hover { background: #fff; transform: scale(1.1); box-shadow: 0 8px 15px rgba(0,0,0,0.1); }
         
-        .music-btn svg { width: 18px; height: 18px; fill: #fff; transition: fill 0.3s; }
-        .music-btn.muted svg { fill: rgba(255,255,255,0.5); }
-        .music-btn.playing { animation: pulse 3s infinite; background: rgba(255,255,255,0.3); }
-        
-        @keyframes pulse { 
-            0% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.2); } 
-            70% { box-shadow: 0 0 0 10px rgba(255, 255, 255, 0); } 
-            100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); } 
-        }
+        .music-btn svg { width: 18px; height: 18px; fill: var(--text-primary); }
+        .music-btn.playing { animation: pulse 3s infinite; background: #fff; }
 
         /* === 4. 开场与UI === */
         .intro-section {
@@ -96,182 +86,208 @@
             text-align: center; 
             z-index: 900; 
             position: fixed; top:0; left:0;
-            background: linear-gradient(120deg, #fdfbfb 0%, #ffefd5 100%);
-            transition: opacity 1s ease, visibility 1s;
+            background: rgba(255,255,255,0.8); /* 稍微透一点 */
+            backdrop-filter: blur(20px);
+            transition: opacity 0.8s ease, visibility 0.8s;
         }
         .intro-section.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
         
         .intro-title { 
-            font-size: 8vw; font-weight: bold; letter-spacing: 10px; margin: 0; 
-            background: linear-gradient(to right, #8b5e3c, #d4af37);
+            font-size: 9vw; font-weight: 900; letter-spacing: 8px; margin: 0; 
+            background: linear-gradient(45deg, #8b5e3c, #d4af37);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 4px 10px rgba(212, 175, 55, 0.3));
         }
-        .intro-subtitle { font-size: 1.2rem; color: #8c7b66; margin-top: 20px; letter-spacing: 5px; }
+        .intro-subtitle { font-size: 1.1rem; color: #8c7b66; margin-top: 15px; letter-spacing: 4px; font-weight: 500;}
         
         .start-btn {
-            margin-top: 50px; padding: 12px 30px;
-            border: 1px solid #5e4b35; color: #5e4b35;
-            font-size: 14px; letter-spacing: 2px;
-            background: transparent; cursor: pointer;
+            margin-top: 50px; padding: 14px 40px;
+            border: none; color: #fff;
+            font-size: 14px; letter-spacing: 3px;
+            background: linear-gradient(90deg, #d4af37, #8b5e3c);
+            cursor: pointer; border-radius: 30px;
+            box-shadow: 0 10px 20px rgba(212, 175, 55, 0.3);
             transition: all 0.3s ease;
         }
-        .start-btn:hover { background: #5e4b35; color: #fff; }
+        .start-btn:hover { transform: translateY(-2px); box-shadow: 0 15px 25px rgba(212, 175, 55, 0.4); }
 
         .scroll-hint { 
             position: fixed; bottom: 30px; width: 100%; text-align: center;
-            font-size: 12px; color: rgba(255,255,255,0.6); 
+            font-size: 12px; color: var(--text-secondary); letter-spacing: 2px;
             opacity: 0; transition: opacity 0.5s; 
             animation: float 3s infinite ease-in-out; pointer-events: none; z-index: 200;
         }
-        body.started .scroll-hint { opacity: 0.6; }
-        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+        body.started .scroll-hint { opacity: 0.8; }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
 
-        /* === 5. 画廊轨道 === */
+        /* === 5. 画廊轨道 (优化卡顿) === */
         .gallery-container {
             width: 100%; height: 100vh;
             overflow: hidden; display: flex; align-items: center;
             visibility: hidden;
-            position: relative; 
-            z-index: 10; 
+            position: relative; z-index: 10; 
         }
         body.started .gallery-container { visibility: visible; }
 
         .gallery-wrapper {
             display: flex; align-items: center; flex-wrap: nowrap;
-            height: 100%; 
-            will-change: transform;
-            /* padding-left 由 JS 动态计算 */
+            height: 100%; will-change: transform; /* 性能优化关键 */
         }
 
         .gallery-item {
             display: flex; flex-direction: column; align-items: flex-start; justify-content: center;
-            /* width 和 margin 由 JS 动态计算 */
-            height: 100%; flex-shrink: 0;
-            position: relative;
+            height: 100%; flex-shrink: 0; position: relative;
         }
 
         .art-card {
             position: relative; width: 100%; height: 60vh; 
             overflow: hidden; cursor: pointer;
-            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4);
-            transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.4s ease;
-            background: white; padding: 10px;
-            transform: translateZ(0);
+            /* 浅色阴影更符合晨光主题 */
+            box-shadow: 0 20px 50px rgba(184, 134, 11, 0.15); 
+            transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.3s ease;
+            background: #fff; padding: 8px;
+            transform: translateZ(0); /* 开启硬件加速 */
         }
-        .art-card:hover { transform: scale(1.02); box-shadow: 0 40px 80px rgba(0,0,0,0.6); }
+        .art-card:hover { transform: scale(1.02); box-shadow: 0 30px 60px rgba(184, 134, 11, 0.25); }
 
         .art-img {
             width: 100%; height: 100%; object-fit: cover;
-            transition: transform 0.8s ease; content-visibility: auto;
+            transition: transform 0.8s ease; 
+            will-change: transform;
         }
-        .art-card:hover .art-img { transform: scale(1.05); }
+        .art-card:hover .art-img { transform: scale(1.06); }
 
         .art-preview-info {
-            margin-top: 20px; text-align: left; opacity: 1;
-            text-shadow: 0 2px 10px rgba(0,0,0,0.8);
-            transform: translateX(5px);
+            margin-top: 25px; text-align: left; opacity: 1;
+            padding-left: 5px;
         }
-        .art-preview-title { font-size: 20px; font-weight: bold; margin: 0 0 5px 0; letter-spacing: 2px; }
-        .art-preview-meta { font-size: 13px; color: rgba(255,255,255,0.8); font-family: sans-serif; letter-spacing: 1px;}
+        .art-preview-title { 
+            font-size: 22px; font-weight: bold; margin: 0 0 5px 0; letter-spacing: 1px; 
+            color: #3d2e22;
+        }
+        .art-preview-meta { font-size: 13px; color: #887462; font-family: sans-serif; letter-spacing: 1px;}
         
-        /* === 6. 详情弹窗 (优化版) === */
+        /* === 6. 液态玻璃详情 UI (核心更新) === */
         .modal {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.85); /* 稍微加深背景 */
-            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            /* 浅色遮罩，配合高斯模糊 */
+            background: rgba(240, 240, 240, 0.4); 
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
             z-index: 999;
             display: flex; justify-content: center; align-items: center;
-            opacity: 0; pointer-events: none; transition: opacity 0.4s ease;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
         }
         .modal.active { opacity: 1; pointer-events: auto; }
 
         .modal-content-box {
-            position: relative; width: 90vw; height: 90vh; max-width: 1400px;
-            background: #1a1a1a; /* 实色背景，避免杂乱 */
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 8px;
-            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
-            padding: 0; /* 移除内边距，完全控制布局 */
-            box-sizing: border-box; 
-            display: flex; flex-direction: column; /* 上下布局 */
-            transform: scale(0.96); transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+            position: relative; width: 85vw; height: 85vh; max-width: 1300px;
+            
+            /* 液态玻璃核心样式 */
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            box-shadow: var(--glass-shadow), inset 0 0 20px rgba(255,255,255,0.5);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            
+            display: flex; flex-direction: column;
+            transform: scale(0.95) translateY(20px); 
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
             overflow: hidden;
         }
-        .modal.active .modal-content-box { transform: scale(1); }
+        .modal.active .modal-content-box { transform: scale(1) translateY(0); }
 
-        /* 上半部分：图片区域，自动撑满 */
+        /* 图片区：给一点边距，像画框 */
         .modal-img-wrapper {
-            position: relative; width: 100%; 
-            flex: 1; /* 关键：占据剩余所有空间 */
+            flex: 1; 
+            width: 100%;
             display: flex; justify-content: center; align-items: center;
-            background: #000;
+            padding: 30px;
+            background: rgba(255,255,255,0.3); /* 极淡的背景区分 */
             overflow: hidden;
-            padding: 20px; /* 给图片一点呼吸空间 */
         }
         .modal-img { 
             width: auto; height: auto; 
             max-width: 100%; max-height: 100%; 
             object-fit: contain; 
-            box-shadow: 0 0 30px rgba(0,0,0,0.5);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.1); /* 柔和阴影 */
+            border-radius: 4px;
         }
 
-        /* 下半部分：文字区域 */
+        /* 文本区：液态玻璃上的深色文字 */
         .modal-text {
             width: 100%; 
-            padding: 25px 40px;
-            background: #1a1a1a;
-            color: #fff;
-            border-top: 1px solid rgba(255,255,255,0.05);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
+            background: rgba(255,255,255,0.1); /* 几乎透明 */
+            color: var(--text-primary);
+            display: flex; flex-direction: column;
+            padding: 30px 40px;
+            border-top: 1px solid rgba(255,255,255,0.5);
         }
 
-        /* 桌面端左右布局优化 (如果屏幕够宽) */
         @media (min-width: 1024px) {
-            .modal-content-box { flex-direction: row; }
-            .modal-img-wrapper { height: 100%; width: 65%; border-right: 1px solid rgba(255,255,255,0.05); }
-            .modal-text { height: 100%; width: 35%; border-top: none; justify-content: center; padding: 50px; }
+            .modal-content-box { flex-direction: row; height: 80vh; }
+            .modal-img-wrapper { height: 100%; width: 60%; border-right: 1px solid rgba(255,255,255,0.5); border-bottom: none; padding: 40px;}
+            .modal-text { height: 100%; width: 40%; justify-content: center; padding: 50px; border-top: none; }
         }
 
-        .modal-title { font-size: 28px; font-weight: bold; margin: 0 0 10px 0; letter-spacing: 2px; color: var(--accent-gold); }
-        .modal-meta { font-size: 13px; color: rgba(255,255,255,0.5); margin-bottom: 20px; font-family: sans-serif; text-transform: uppercase; letter-spacing: 1px; }
-        .modal-desc { font-size: 15px; line-height: 1.8; text-align: justify; opacity: 0.9; color: #ddd; max-height: 40vh; overflow-y: auto; padding-right: 10px;}
+        .modal-title { 
+            font-size: 32px; font-weight: 800; margin: 0 0 10px 0; letter-spacing: 2px; 
+            color: #2c1e12; 
+            text-shadow: 0 2px 5px rgba(255,255,255,0.8);
+        }
+        .modal-meta { 
+            font-size: 14px; color: #8b5e3c; margin-bottom: 25px; 
+            font-family: sans-serif; letter-spacing: 1px; font-weight: 600;
+        }
         
-        /* 美化滚动条 */
-        .modal-desc::-webkit-scrollbar { width: 4px; background: rgba(255,255,255,0.1); }
-        .modal-desc::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 2px; }
+        /* 优化长文本滚动体验 */
+        .modal-desc-scroll {
+            font-size: 16px; line-height: 1.8; text-align: justify; 
+            color: #4a3b2a; 
+            max-height: 40vh; overflow-y: auto; padding-right: 15px;
+            /* 增加一点字重，防止在玻璃背景上看不清 */
+            font-weight: 400; 
+        }
+        
+        /* 自定义滚动条 - 纤细优雅 */
+        .modal-desc-scroll::-webkit-scrollbar { width: 5px; }
+        .modal-desc-scroll::-webkit-scrollbar-track { background: rgba(0,0,0,0.02); }
+        .modal-desc-scroll::-webkit-scrollbar-thumb { background: rgba(139, 94, 60, 0.3); border-radius: 10px; }
+        .modal-desc-scroll::-webkit-scrollbar-thumb:hover { background: rgba(139, 94, 60, 0.6); }
 
         .close-btn {
-            position: absolute; top: 15px; right: 15px;
-            width: 40px; height: 40px; border-radius: 50%;
-            background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2);
-            color: #fff; font-size: 18px;
+            position: absolute; top: 20px; right: 20px;
+            width: 44px; height: 44px; border-radius: 50%;
+            background: #fff; 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            color: #333; font-size: 20px;
             display: flex; justify-content: center; align-items: center;
             cursor: pointer; transition: all 0.3s; z-index: 100;
         }
-        .close-btn:hover { background: #fff; color: #000; transform: rotate(90deg); }
+        .close-btn:hover { background: var(--accent-gold); color: #fff; transform: rotate(90deg) scale(1.1); }
 
         .progress-bar {
-            position: fixed; bottom: 0; left: 0; height: 3px; background: var(--accent-gold);
+            position: fixed; bottom: 0; left: 0; height: 4px; 
+            background: linear-gradient(90deg, #d4af37, #f7e6ad);
             width: 0%; z-index: 850;
         }
         
         @media (max-width: 768px) {
             .intro-title { font-size: 12vw; }
             .art-card { height: 50vh; }
-            .modal-content-box { width: 100%; height: 100%; border-radius: 0; }
-            .modal-text { padding: 20px; }
-            .controls-area { top: 15px; right: 15px; gap: 10px; }
-            .control-btn { width: 32px; height: 32px; font-size: 10px; }
+            .modal-content-box { width: 92vw; height: 90vh; flex-direction: column; }
+            .modal-img-wrapper { height: 45%; padding: 15px; }
+            .modal-text { height: 55%; padding: 25px; justify-content: flex-start; }
+            .modal-desc-scroll { max-height: 100%; font-size: 14px; }
+            .modal-title { font-size: 24px; }
+            .controls-area { top: 20px; right: 20px; gap: 10px; }
         }
     </style>
 </head>
 <body>
 
-    <div class="dynamic-bg-container" id="bg-container">
-        <div class="bg-overlay"></div>
-    </div>
+    <div class="morning-bg"></div>
+    <div class="noise-overlay"></div>
 
     <audio id="bg-music" loop preload="auto">
         <source src="assets/music/还是会想你曼波.mp3" type="audio/mpeg">
@@ -295,7 +311,7 @@
             <div class="modal-text">
                 <div class="modal-title" id="m-title"></div>
                 <div class="modal-meta" id="m-meta"></div>
-                <div class="modal-desc" id="m-desc"></div>
+                <div class="modal-desc-scroll" id="m-desc"></div>
             </div>
         </div>
     </div>
@@ -310,32 +326,36 @@
 
     <div class="gallery-container">
         <div class="gallery-wrapper" id="gallery-wrapper">
-        </div>
+            </div>
     </div>
 
     <script>
-        // === 数据 ===
+        // === 数据 (保持不变) ===
         const uiText = {
-            zh: { subtitle: "CHINESE PAINTING · 晨光画境", enterBtn: "进入画境", scrollHint: "SCROLL TO EXPLORE / 滚动探索", langBtn: "EN" },
+            zh: { subtitle: "CHINESE PAINTING · 晨光画境", enterBtn: "进入画境", scrollHint: "SCROLL / 滑动探索", langBtn: "EN" },
             en: { subtitle: "CHINESE PAINTING · Art of Morning Light", enterBtn: "ENTER GALLERY", scrollHint: "SCROLL TO EXPLORE", langBtn: "中" }
         };
 
+        // 模拟长文本，测试滚动条
+        const longTextZh = "。这幅作品不仅展示了技法的高超，更融入了画家对于晨光与生命的深刻哲思。画面中每一笔都经过深思熟虑，墨色的浓淡变化极其丰富，仿佛在诉说着一个关于时间与永恒的故事。观者在驻足凝视时，往往能感受到一种超越视觉的心灵震撼。画中的留白并非空无一物，而是充满了气的流动，是此时无声胜有声的最佳写照。";
+        const longTextEn = " This artwork not only demonstrates superior technique but also incorporates the artist's profound philosophy on morning light and life. Every stroke is deliberate, with rich variations in ink tone, telling a story about time and eternity. Viewers often feel a spiritual shock beyond vision. The negative space is not empty but full of the flow of Qi.";
+
         const originalArtworks = [
-            { id: 1, src: "assets/images/gallery/eg1.jpg", title: { zh: "晨光熹微 No.1", en: "First Light No.1" }, year: "2023 · 138x69cm", desc: { zh: "笔墨在晨光中苏醒，捕捉第一缕阳光穿透云雾的瞬间。画面运用了传统的积墨法与现代的光影构成，试图在混沌中寻找秩序与希望。", en: "Ink awakens in the morning light, capturing the moment sunlight pierces through the mist. Using traditional ink layering with modern composition, it seeks order and hope amidst chaos." } },
-            { id: 2, src: "assets/images/gallery/eg2.jpg", title: { zh: "山间清风 No.2", en: "Mountain Breeze No.2" }, year: "2023 · 69x69cm", desc: { zh: "以清透的淡彩与水墨交融，表现山间清风拂过林梢的动态。留白的处理旨在营造空灵幽远的意境，强调人与自然的和谐共生。", en: "Clear watercolors blend with ink to express the breeze sweeping through treetops. The negative space creates an ethereal atmosphere, emphasizing harmony between man and nature." } },
-            { id: 3, src: "assets/images/gallery/eg3.jpg", title: { zh: "古木幽鸣 No.3", en: "Ancient Echoes No.3" }, year: "2022 · 180x97cm", desc: { zh: "聚焦于古树的肌理与沧桑感。通过焦墨与宿墨的对比，强化了古木盘根错节的生命力，仿佛能听到历史的回响。", en: "Focusing on the texture and vicissitudes of ancient trees. The contrast between dry and accumulated ink highlights the intertwined vitality, echoing the sounds of history." } },
-            { id: 4, src: "assets/images/gallery/eg4.jpg", title: { zh: "溪山行旅 No.4", en: "Travels in Mountains No.4" }, year: "2023 · 138x34cm", desc: { zh: "向传统宋画致敬的长卷构图。在狭长的空间中安排了多重透视，引导观者视线随溪流而上，体验可行、可望、可游的境界。", en: "A tribute to Song Dynasty landscape painting in a long scroll format. Multiple perspectives guide the viewer upstream, creating an immersive journey through the landscape." } },
-            { id: 5, src: "assets/images/gallery/eg5.jpg", title: { zh: "云蒸霞蔚 No.5", en: "Rising Clouds No.5" }, year: "2024 · 90x90cm", desc: { zh: "大胆运用朱砂与石青色，描绘日出时分云蒸霞蔚的壮观景象。色彩的碰撞与融合，旨在表现自然界瞬息万变的磅礴能量。", en: "Bold use of Cinnabar and Mineral Blue depicts the magnificent sunrise. The collision of colors expresses the majestic and ever-changing energy of nature." } },
-            { id: 6, src: "assets/images/gallery/eg6.jpg", title: { zh: "静谧之境 No.6", en: "Serenity No.6" }, year: "2022 · 69x45cm", desc: { zh: "一幅极简主义风格的小品。大部分画面留白，仅在角落以简练的笔触勾勒出一石一草，追求“少即是多”的禅意表达。", en: "A minimalist piece. Most of the paper is left blank, with simple strokes outlining a stone and grass in the corner, pursuing the Zen expression of 'less is more'." } },
-            { id: 7, src: "assets/images/gallery/eg7.jpg", title: { zh: "雨后初晴 No.7", en: "After the Rain No.7" }, year: "2023 · 138x69cm", desc: { zh: "利用湿画法表现雨后山石润泽、空气清新的质感。画面中水气氤氲，仿佛能闻到泥土的芬芳，展现了江南烟雨的独特韵味。", en: "Using wet wash techniques to show the moist texture of rocks after rain. The misty atmosphere evokes the scent of earth, showcasing the unique charm of Jiangnan rain." } },
-            { id: 8, src: "assets/images/gallery/eg8.jpg", title: { zh: "秋山红叶 No.8", en: "Autumn Hills No.8" }, year: "2023 · 120x120cm", desc: { zh: "满幅构图，以热烈的色彩表现秋山的丰富层次。墨色作为骨架，承载着斑斓的色彩，旨在传达秋天丰饶而深沉的情绪。", en: "Full composition using warm colors to show the rich layers of autumn hills. Ink serves as the skeleton supporting vibrant colors, conveying the richness and depth of autumn." } },
-            { id: 9, src: "assets/images/gallery/eg9.jpg", title: { zh: "寒江独钓 No.9", en: "Solitary Fishing No.9" }, year: "2022 · 69x69cm", desc: { zh: "取材于传统诗意，但以现代构成手法重新诠释。画面极度空旷，孤舟蓑笠翁被提炼为一个符号，强调孤独与坚守的精神内核。", en: "Based on traditional poetry but reinterpreted with modern composition. The vast emptiness isolates the boatman, symbolizing solitude and perseverance." } },
-            { id: 10, src: "assets/images/gallery/eg10.jpg", title: { zh: "墨韵流光 No.10", en: "Flowing Ink No.10" }, year: "2024 · 180x97cm", desc: { zh: "探索水墨材料本身的流动性与偶然性。在创作过程中大量运用泼墨与冲水技法，让墨色在纸上自由流淌，形成不可复制的抽象肌理。", en: "Exploring the fluidity and chance of ink materials. Using splashing and washing techniques, ink flows freely on paper, creating unreproducible abstract textures." } },
-            { id: 11, src: "assets/images/gallery/eg11.jpg", title: { zh: "春山烟雨 No.11", en: "Spring Mist No.11" }, year: "2023 · 138x69cm", desc: { zh: "以温润的笔触描绘春山的柔美。淡绿与浅赭色相互晕染，营造出一种朦胧、诗意的梦境感，展现了万物复苏的生机。", en: "Depicting the softness of spring mountains with gentle strokes. Light green and ochre blend to create a hazy, poetic dreamscape, showing the vitality of rebirth." } },
-            { id: 12, src: "assets/images/gallery/eg12.jpg", title: { zh: "岩壑藏幽 No.12", en: "Hidden Valley No.12" }, year: "2022 · 200x100cm", desc: { zh: "巨幅作品，强调山石的体量感与压迫感。通过繁复的皴法与深沉的墨色，构建了一个深邃、神秘的岩壑世界，引人探幽。", en: "A massive work emphasizing the volume and presence of rocks. Complex texturing and deep ink build a profound, mysterious valley world that invites exploration." } }
+            { id: 1, src: "assets/images/gallery/eg1.jpg", title: { zh: "晨光熹微 No.1", en: "First Light No.1" }, year: "2023 · 138x69cm", desc: { zh: "笔墨在晨光中苏醒，捕捉第一缕阳光穿透云雾的瞬间。画面运用了传统的积墨法与现代的光影构成，试图在混沌中寻找秩序与希望" + longTextZh + longTextZh, en: "Ink awakens in the morning light. Using traditional ink layering with modern composition, it seeks order and hope amidst chaos." + longTextEn + longTextEn } },
+            { id: 2, src: "assets/images/gallery/eg2.jpg", title: { zh: "山间清风 No.2", en: "Mountain Breeze No.2" }, year: "2023 · 69x69cm", desc: { zh: "以清透的淡彩与水墨交融，表现山间清风拂过林梢的动态。留白的处理旨在营造空灵幽远的意境，强调人与自然的和谐共生。", en: "Clear watercolors blend with ink to express the breeze sweeping through treetops. The negative space creates an ethereal atmosphere." } },
+            { id: 3, src: "assets/images/gallery/eg3.jpg", title: { zh: "古木幽鸣 No.3", en: "Ancient Echoes No.3" }, year: "2022 · 180x97cm", desc: { zh: "聚焦于古树的肌理与沧桑感。通过焦墨与宿墨的对比，强化了古木盘根错节的生命力，仿佛能听到历史的回响。", en: "Focusing on the texture of ancient trees. The contrast between dry and accumulated ink highlights the intertwined vitality." } },
+            { id: 4, src: "assets/images/gallery/eg4.jpg", title: { zh: "溪山行旅 No.4", en: "Travels in Mountains No.4" }, year: "2023 · 138x34cm", desc: { zh: "向传统宋画致敬的长卷构图。在狭长的空间中安排了多重透视，引导观者视线随溪流而上，体验可行、可望、可游的境界。", en: "A tribute to Song Dynasty landscape painting. Multiple perspectives guide the viewer upstream, creating an immersive journey." } },
+            { id: 5, src: "assets/images/gallery/eg5.jpg", title: { zh: "云蒸霞蔚 No.5", en: "Rising Clouds No.5" }, year: "2024 · 90x90cm", desc: { zh: "大胆运用朱砂与石青色，描绘日出时分云蒸霞蔚的壮观景象。色彩的碰撞与融合，旨在表现自然界瞬息万变的磅礴能量。", en: "Bold use of Cinnabar and Mineral Blue depicts the magnificent sunrise. The collision of colors expresses majestic energy." } },
+            { id: 6, src: "assets/images/gallery/eg6.jpg", title: { zh: "静谧之境 No.6", en: "Serenity No.6" }, year: "2022 · 69x45cm", desc: { zh: "极简主义风格。大部分画面留白，仅在角落以简练的笔触勾勒出一石一草，追求“少即是多”的禅意表达。", en: "A minimalist piece. Most of the paper is left blank, pursuing the Zen expression of 'less is more'." } },
+            { id: 7, src: "assets/images/gallery/eg7.jpg", title: { zh: "雨后初晴 No.7", en: "After the Rain No.7" }, year: "2023 · 138x69cm", desc: { zh: "利用湿画法表现雨后山石润泽、空气清新的质感。画面中水气氤氲，仿佛能闻到泥土的芬芳。", en: "Using wet wash techniques to show the moist texture of rocks after rain. The misty atmosphere evokes the scent of earth." } },
+            { id: 8, src: "assets/images/gallery/eg8.jpg", title: { zh: "秋山红叶 No.8", en: "Autumn Hills No.8" }, year: "2023 · 120x120cm", desc: { zh: "满幅构图，以热烈的色彩表现秋山的丰富层次。墨色作为骨架，承载着斑斓的色彩。", en: "Full composition using warm colors to show the rich layers of autumn hills. Ink serves as the skeleton supporting vibrant colors." } },
+            { id: 9, src: "assets/images/gallery/eg9.jpg", title: { zh: "寒江独钓 No.9", en: "Solitary Fishing No.9" }, year: "2022 · 69x69cm", desc: { zh: "取材于传统诗意，现代构成诠释。画面极度空旷，孤舟蓑笠翁被提炼为一个符号，强调孤独与坚守的精神内核。", en: "Based on traditional poetry but reinterpreted. The vast emptiness isolates the boatman, symbolizing solitude and perseverance." } },
+            { id: 10, src: "assets/images/gallery/eg10.jpg", title: { zh: "墨韵流光 No.10", en: "Flowing Ink No.10" }, year: "2024 · 180x97cm", desc: { zh: "探索水墨材料本身的流动性。泼墨与冲水让墨色在纸上自由流淌，形成不可复制的抽象肌理。", en: "Exploring ink fluidity. Splashing and washing create unreproducible abstract textures." } },
+            { id: 11, src: "assets/images/gallery/eg11.jpg", title: { zh: "春山烟雨 No.11", en: "Spring Mist No.11" }, year: "2023 · 138x69cm", desc: { zh: "温润的笔触描绘春山。淡绿与浅赭色相互晕染，营造出一种朦胧、诗意的梦境感。", en: "Depicting soft spring mountains. Light green and ochre blend to create a hazy, poetic dreamscape." } },
+            { id: 12, src: "assets/images/gallery/eg12.jpg", title: { zh: "岩壑藏幽 No.12", en: "Hidden Valley No.12" }, year: "2022 · 200x100cm", desc: { zh: "巨幅作品，强调山石的体量感。繁复皴法与深沉墨色构建了一个深邃、神秘的岩壑世界。", en: "A massive work emphasizing rock volume. Complex texturing builds a profound, mysterious valley world." } }
         ];
 
-        // 克隆数组实现无限循环（追加一份到末尾）
+        // 克隆数组实现无限循环
         const totalItemsCount = originalArtworks.length;
         const displayArtworks = [...originalArtworks, ...originalArtworks];
 
@@ -354,7 +374,6 @@
             });
 
             if(document.body.classList.contains('modal-open') && typeof currentArtIndex !== 'undefined') {
-                 // 使用取模来获取原始数据，处理克隆后的索引
                  const art = originalArtworks[currentArtIndex % totalItemsCount];
                  document.getElementById('m-title').innerText = art.title[currentLang];
                  document.getElementById('m-desc').innerText = art.desc[currentLang];
@@ -366,41 +385,22 @@
             updateUIText();
         }
 
-        function checkLocation() {
-            fetch('https://ipapi.co/json/').then(r => r.json()).then(d => {
-                if (d.country_code && d.country_code !== 'CN') { currentLang = 'en'; updateUIText(); }
-            }).catch(e => console.log("Loc check failed", e));
-        }
-        checkLocation();
-
         // === DOM 生成 ===
         const wrapper = document.getElementById('gallery-wrapper');
-        const bgContainer = document.getElementById('bg-container');
         const isMobile = window.innerWidth < 768;
         
         // 布局参数 (vw)
         const itemWidthVw = isMobile ? 85 : 50; 
-        const itemMarginVw = isMobile ? 5 : 10;
-        const paddingLeftVw = isMobile ? 10 : 15;
+        const itemMarginVw = isMobile ? 5 : 8; // 减少间距，视觉更紧凑
+        const paddingLeftVw = isMobile ? 8 : 15;
         const singleItemTotalVw = itemWidthVw + itemMarginVw;
         
-        // 1. 设置 wrapper 内边距
         wrapper.style.paddingLeft = `${paddingLeftVw}vw`;
 
-        // 2. 生成背景层 (只需要生成原始数量)
-        originalArtworks.forEach((art, index) => {
-            const bgLayer = document.createElement('div');
-            bgLayer.className = 'bg-layer';
-            if(index === 0) bgLayer.classList.add('active');
-            bgLayer.innerHTML = `<img src="${art.src}" class="bg-img" alt="bg">`;
-            bgContainer.appendChild(bgLayer);
-        });
-
-        // 3. 生成画廊卡片 (包含克隆的)
+        // 生成画廊卡片
         displayArtworks.forEach((art, index) => {
             const item = document.createElement('div');
             item.className = 'gallery-item';
-            // 设置宽度和右边距
             item.style.width = `${itemWidthVw}vw`;
             item.style.marginRight = `${itemMarginVw}vw`;
             
@@ -416,27 +416,27 @@
             wrapper.appendChild(item);
         });
 
-        // 计算单次循环的总宽度 (像素)
-        const viewportWidth = window.innerWidth;
-        const oneSetWidthPx = (totalItemsCount * singleItemTotalVw) * (viewportWidth / 100);
-        
-        // 总宽度 = padding + 所有卡片宽度
+        // 宽度的精确计算
         const totalVw = paddingLeftVw + (displayArtworks.length * singleItemTotalVw);
         wrapper.style.width = `${totalVw}vw`;
+        
+        // 计算循环临界点
+        const viewportWidth = window.innerWidth;
+        const oneSetWidthPx = (totalItemsCount * singleItemTotalVw) * (viewportWidth / 100);
 
-        // === 动画与滚动 ===
+        // === 动画与滚动 (性能优化版) ===
         gsap.registerPlugin(ScrollTrigger);
 
+        // Lenis 配置优化：更跟手，不卡顿
         const lenis = new Lenis({
-            duration: 1.2,
+            duration: 0.8, // 降低 duration 让停止更干脆
             easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
             direction: 'vertical', 
             smooth: true,
             smoothTouch: true,
-            touchMultiplier: 2
+            touchMultiplier: 2.5 // 提高触摸灵敏度
         });
 
-        // GSAP ScrollTrigger: 将垂直滚动映射为水平移动
         const scrollTween = gsap.to(wrapper, {
             x: () => -(wrapper.scrollWidth - window.innerWidth),
             ease: "none",
@@ -445,32 +445,8 @@
                 pin: true,
                 start: "top top",
                 end: () => `+=${wrapper.scrollWidth - window.innerWidth}`,
-                scrub: 0.5, // 稍微降低一点 scrub 让停止更跟手
-                invalidateOnRefresh: true,
-                onUpdate: (self) => {
-                    // 背景切换逻辑 (取模 %)
-                    const progress = self.progress;
-                    const totalScrollWidth = wrapper.scrollWidth - window.innerWidth;
-                    const currentX = progress * totalScrollWidth;
-                    
-                    // 计算当前在第几张图 (基于像素位置近似计算)
-                    const itemFullWidthPx = (singleItemTotalVw * viewportWidth) / 100;
-                    // 减去 padding 偏移
-                    const effectiveX = Math.max(0, currentX - (paddingLeftVw * viewportWidth / 100) + (viewportWidth * 0.2)); 
-                    let index = Math.floor(effectiveX / itemFullWidthPx);
-                    
-                    // 取模，映射回原始 12 张图
-                    const realIndex = index % totalItemsCount;
-
-                    const layers = document.querySelectorAll('.bg-layer');
-                    layers.forEach((layer, i) => {
-                        if (i === realIndex) {
-                            if (!layer.classList.contains('active')) layer.classList.add('active');
-                        } else {
-                            if (layer.classList.contains('active')) layer.classList.remove('active');
-                        }
-                    });
-                }
+                scrub: 0.1, // 降低 scrub 延迟，减少“飘”的感觉
+                invalidateOnRefresh: true
             }
         });
 
@@ -479,84 +455,70 @@
             scrollTrigger: { trigger: ".gallery-container", start: "top top", end: () => `+=${wrapper.scrollWidth - window.innerWidth}`, scrub: 0 }
         });
 
-        // === 自动播放与循环逻辑 ===
+        // === 自动播放与控制 ===
         let isGalleryStarted = false;
         let isUserScrolling = false;
-        let autoScrollSpeed = isMobile ? 0.8 : 1.5; 
+        // 速度提升：手机 1.5, 电脑 2.5
+        let baseSpeed = isMobile ? 1.5 : 2.5; 
         let scrollTimeout;
         let snapTimeout;
 
         function raf(time) {
             lenis.raf(time);
             
-            // 核心逻辑：无限循环跳转
-            // 如果滚动位置超过了第一组的总长度，瞬间拉回起点
+            // 无限循环逻辑
             if (lenis.scroll >= oneSetWidthPx) {
                 lenis.scrollTo(lenis.scroll - oneSetWidthPx, { immediate: true });
             }
 
             // 自动播放
             if (isGalleryStarted && !isUserScrolling && !document.body.classList.contains('modal-open')) {
-                lenis.scrollTo(lenis.scroll + autoScrollSpeed, { immediate: true });
+                lenis.scrollTo(lenis.scroll + baseSpeed, { immediate: true });
             }
             requestAnimationFrame(raf);
         }
         requestAnimationFrame(raf);
 
-        // 监听用户交互
+        // 监听交互
         ['pointerdown', 'touchstart', 'wheel'].forEach(evt => {
             window.addEventListener(evt, () => {
                 if(isGalleryStarted) {
                     isUserScrolling = true;
                     clearTimeout(scrollTimeout);
-                    clearTimeout(snapTimeout); // 用户操作时清除吸附倒计时
                 }
             }, {passive: true});
         });
 
         lenis.on('scroll', () => {
             if(isGalleryStarted) {
-                // 滚动停止检测
                 clearTimeout(scrollTimeout);
                 scrollTimeout = setTimeout(() => {
                     if(!document.body.classList.contains('modal-open')) {
-                        // 用户停止滚动后，先吸附，再恢复自动播放
                         performSnap();
                     }
-                }, 100); // 停止 100ms 后触发逻辑
+                }, 150); 
             }
         });
 
-        // === 核心：精准吸附 (Snap) ===
+        // 吸附 (Snap)
         function performSnap() {
             if (!isGalleryStarted) return;
-
-            // 计算一张图的像素宽度
             const itemPx = (singleItemTotalVw * window.innerWidth) / 100;
-            const paddingPx = (paddingLeftVw * window.innerWidth) / 100;
-            
-            // 当前滚动位置
             const currentScroll = lenis.scroll;
             
-            // 计算最近的图片索引 (round)
-            // 目标位置 = index * itemPx
-            // 考虑到 padding，我们需要微调。实际上 lenis.scroll 0 对应第一张图居中位置稍偏左
-            // 简单算法：直接对 itemPx 取整
             let targetIndex = Math.round(currentScroll / itemPx);
             let targetScroll = targetIndex * itemPx;
 
-            // 平滑吸附过去
             lenis.scrollTo(targetScroll, { 
-                duration: 1.0, 
-                easing: (t) => 1 - Math.pow(1 - t, 3), // cubicOut
+                duration: 0.8, // 快速回弹
+                easing: (t) => 1 - Math.pow(1 - t, 3), 
                 onComplete: () => {
-                    // 吸附完成后，恢复自动慢速播放
                     isUserScrolling = false; 
                 }
             });
         }
 
-        // === 控制 ===
+        // === 控制逻辑 ===
         const bgMusic = document.getElementById('bg-music');
         const introSection = document.getElementById('intro');
         const musicBtn = document.getElementById('music-toggle');
@@ -565,8 +527,6 @@
             isGalleryStarted = true;
             document.body.classList.add('started');
             introSection.classList.add('hidden');
-            
-            // 启动时自动播放
             isUserScrolling = false;
         }
 
@@ -582,7 +542,7 @@
             }
         }
 
-        // === 弹窗 ===
+        // === 弹窗逻辑 ===
         const modal = document.getElementById('detail-modal');
         const mImg = document.getElementById('modal-img');
         const mTitle = document.getElementById('m-title');
@@ -591,7 +551,6 @@
         let currentArtIndex = 0; 
 
         window.openModal = function(index) {
-            // 这里 index 可能是克隆后的索引（比如 12, 13...）
             currentArtIndex = index;
             const realIndex = index % totalItemsCount;
             const data = originalArtworks[realIndex];
@@ -600,22 +559,23 @@
             mTitle.innerText = data.title[currentLang];
             mMeta.innerText = data.year;
             mDesc.innerText = data.desc[currentLang];
+            // 每次打开时，文字滚动条复位
+            mDesc.scrollTop = 0; 
             
             modal.classList.add('active');
             document.body.classList.add('modal-open');
-            lenis.stop(); // 停止底层滚动
+            lenis.stop();
         };
 
         function closeModal() {
             modal.classList.remove('active');
             document.body.classList.remove('modal-open');
-            lenis.start(); // 恢复底层滚动
-            // 延迟一点恢复自动播放，防止冲突
+            lenis.start(); 
             setTimeout(() => { if(isGalleryStarted) isUserScrolling = false; }, 500);
         }
         document.getElementById('close-modal-btn').onclick = closeModal;
         modal.onclick = (e) => {
-            if(e.target === modal || e.target.classList.contains('modal-content-box')) closeModal();
+            if(e.target === modal) closeModal();
         };
 
     </script>
