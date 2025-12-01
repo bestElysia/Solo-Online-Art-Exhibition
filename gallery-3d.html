@@ -2,450 +2,363 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Yanxu | 晨光画境</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/studio-freight/lenis@1.0.29/bundled/lenis.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
     <style>
-        /* === 1. 配色与基础 === */
+        /* === 1. 晨光暖阳配色系统 === */
         :root {
+            /* 背景：暖杏色渐变 */
+            --bg-gradient: linear-gradient(120deg, #fdfbfb 0%, #ffefd5 100%);
+            /* 文字：深咖色 */
             --text-primary: #5e4b35;
             --text-secondary: #8c7b66;
+            /* 强调色：淡金 */
             --accent-gold: #d4af37;
-            --glass-bg: rgba(255, 255, 255, 0.7);
-            --glass-shadow: 0 20px 50px rgba(210, 180, 140, 0.2);
+            /* 玻璃质感 */
+            --glass-bg: rgba(255, 255, 255, 0.65);
+            --glass-border: rgba(255, 255, 255, 0.8);
+            --glass-shadow: 0 15px 35px rgba(210, 180, 140, 0.25);
         }
 
         body {
             margin: 0; padding: 0;
-            background: #fdfbfb;
+            background: var(--bg-gradient);
             color: var(--text-primary);
             font-family: "Songti SC", "Noto Serif SC", serif;
             overflow-x: hidden;
-            /* 关键：防止 iOS 下拉刷新导致页面错位 */
-            overscroll-behavior: none;
-            -webkit-font-smoothing: antialiased;
         }
 
-        ::-webkit-scrollbar { width: 0px; }
+        ::-webkit-scrollbar { width: 0px; background: transparent; }
 
-        #webgl-bg {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: -1; pointer-events: none;
-            /* 移动端性能优化：低端机可设为 opacity: 0.5 */
-        }
-
-        /* === 2. 开场与UI === */
+        /* === 2. 开场文字 === */
         .intro-section {
             height: 100vh;
             display: flex; flex-direction: column;
             justify-content: center; align-items: center;
-            text-align: center; z-index: 10; position: relative;
-            /* 硬件加速 */
-            will-change: transform, opacity;
+            text-align: center; z-index: 10; relative;
         }
         .intro-title { 
             font-size: 8vw; font-weight: bold; letter-spacing: 10px; margin: 0; 
             background: linear-gradient(to right, #8b5e3c, #d4af37);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
             opacity: 0; transform: translateY(50px);
-            /* 减少阴影模糊半径以提升移动端性能 */
-            text-shadow: 0 2px 10px rgba(212, 175, 55, 0.15);
         }
-        @media (max-width: 768px) { .intro-title { font-size: 15vw; letter-spacing: 5px; } }
         .intro-subtitle { font-size: 1.2rem; color: var(--text-secondary); margin-top: 20px; letter-spacing: 5px; opacity: 0; }
-        
-        #music-btn {
-            position: fixed; top: 30px; right: 30px; z-index: 100;
-            width: 40px; height: 40px; border-radius: 50%;
-            border: 1px solid var(--accent-gold);
-            display: flex; justify-content: center; align-items: center;
-            cursor: pointer; opacity: 0.7; transition: all 0.3s;
-            background: rgba(255,255,255,0.3); backdrop-filter: blur(5px);
-            -webkit-tap-highlight-color: transparent; /* 移除点击高亮 */
-        }
-        #music-btn.playing { animation: spin 5s linear infinite; opacity: 1; background: rgba(255,255,255,0.8); }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
+        .scroll-hint { position: absolute; bottom: 50px; font-size: 12px; color: var(--text-secondary); opacity: 0.6; animation: float 3s infinite ease-in-out; }
+
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
 
         /* === 3. 画廊轨道 === */
         .gallery-wrapper {
+            /* 宽度由JS动态计算 */
             height: 100vh;
-            display: flex; align-items: center; flex-wrap: nowrap;
-            padding-left: 10vw; 
-            will-change: transform; /* 关键：告诉浏览器这个元素会动 */
-        }
-
-        .gallery-item {
-            width: 50vw; height: 75vh; 
-            display: flex; justify-content: center; align-items: center;
-            margin-right: 8vw; flex-shrink: 0; position: relative;
-        }
-        @media (max-width: 768px) {
-            .gallery-wrapper { padding-left: 5vw; }
-            .gallery-item { width: 88vw; height: 65vh; margin-right: 5vw; }
-        }
-
-        .art-container {
-            width: 100%; height: 100%;
-            display: flex; flex-direction: column; align-items: center;
-            transform-style: preserve-3d;
-        }
-
-        .art-card {
-            position: relative; width: 100%; flex: 1;
-            overflow: hidden; cursor: pointer;
-            box-shadow: 0 15px 40px rgba(139, 69, 19, 0.1); /* 减淡阴影提升性能 */
-            transition: transform 0.4s ease-out;
-            background: transparent;
-            -webkit-tap-highlight-color: transparent;
-        }
-        
-        /* PC端才有 hover 放大，移动端移除 hover 效果防止粘滞 */
-        @media (min-width: 769px) {
-            .art-card:hover { transform: scale(1.02); }
-        }
-        /* 移动端点击反馈 */
-        @media (max-width: 768px) {
-            .art-card:active { transform: scale(0.98); }
-        }
-
-        .art-img { 
-            width: 100%; height: 100%; object-fit: cover; 
-            /* 移动端建议移除图片内部视差，或者极小幅度，否则掉帧 */
-            transition: transform 0.1s; 
+            display: flex;
+            align-items: center; /* 关键：垂直居中，高度统一 */
+            flex-wrap: nowrap;
+            padding-left: 10vw; /* 起始留白 */
             will-change: transform;
         }
 
-        .art-preview-info {
-            position: relative; margin-top: 20px; text-align: center;
-            flex-shrink: 0; opacity: 0.8; transition: opacity 0.3s;
+        .gallery-item {
+            /* 每张画的容器宽度 */
+            width: 50vw; 
+            height: 60vh; /* 统一高度 */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-right: 8vw; /* 画作间距 */
+            flex-shrink: 0;
+            position: relative;
         }
-        @media (max-width: 768px) { .art-preview-info { opacity: 1; margin-top: 15px; } }
-        
-        .art-preview-title { font-size: 20px; font-weight: bold; margin: 0 0 5px 0; letter-spacing: 2px; }
-        .art-preview-meta { font-size: 13px; color: var(--text-secondary); margin: 0; }
 
-        /* === 4. 优化后的弹窗 === */
+        /* 画框设计：晨光风格 */
+        .art-card {
+            position: relative;
+            width: 100%; height: 100%;
+            overflow: hidden;
+            cursor: pointer;
+            box-shadow: 0 20px 60px rgba(139, 69, 19, 0.15); /* 暖色投影 */
+            transition: transform 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+            background: white; /* 像装裱的白底 */
+            padding: 15px; /* 留白边框 */
+        }
+        .art-card:hover { transform: scale(1.03); box-shadow: 0 30px 70px rgba(139, 69, 19, 0.25); }
+
+        .art-img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            /* 视差效果需配合 overflow: hidden */
+            transition: transform 0.1s; 
+        }
+
+        /* 列表页的信息 (悬浮在画框下方) */
+        .art-preview-info {
+            position: absolute; bottom: -50px; left: 0; text-align: left;
+            opacity: 0.7; transition: opacity 0.3s;
+        }
+        .gallery-item:hover .art-preview-info { opacity: 1; }
+        .art-preview-title { font-size: 18px; font-weight: bold; margin: 0; letter-spacing: 1px; }
+        .art-preview-meta { font-size: 12px; color: var(--text-secondary); margin-top: 5px; font-family: sans-serif; }
+
+        /* === 4. 详情弹窗 (晨光玻璃风格) === */
         .modal {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(255, 255, 255, 0.2); /* 降低透明度，减少重绘 */
-            /* backdrop-filter 性能消耗极大，移动端若卡顿可去掉 */
-            backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+            background: rgba(255, 245, 235, 0.6); /* 暖色半透明遮罩 */
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
             z-index: 999;
             display: flex; justify-content: center; align-items: center;
-            opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.5s ease;
         }
         .modal.active { opacity: 1; pointer-events: auto; }
 
+        /* 弹窗内容容器 */
         .modal-content-box {
             position: relative;
-            width: 95vw; height: 90vh; max-width: 1600px;
+            width: 95vw; height: 92vh; max-width: 1600px;
             background: var(--glass-bg);
-            /* 移动端减少 blur 强度 */
-            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.6);
-            border-radius: 20px; box-shadow: var(--glass-shadow);
-            transform: scale(0.96); transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-            display: flex; flex-direction: column; overflow: hidden;
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            box-shadow: var(--glass-shadow);
+            padding: 20px 20px 50px 20px; /* 底部留空给热度 */
+            box-sizing: border-box;
+            display: flex; flex-direction: column; align-items: center;
+            transform: scale(0.95); transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
         }
         .modal.active .modal-content-box { transform: scale(1); }
-        @media (max-width: 768px) { 
-            .modal-content-box { width: 100vw; height: 100vh; border-radius: 0; border: none; } 
-        }
 
-        .modal-body { width: 100%; height: 100%; position: relative; }
-        
+        /* 大图 */
         .modal-img {
-            width: 100%; height: 100%;
-            object-fit: contain; /* 确保图片完整显示 */
-            padding-bottom: 20vh; /* 为文字留出空间 */
-            box-sizing: border-box;
-        }
-        
-        .modal-text {
-            width: 100%; padding: 20px; box-sizing: border-box;
-            text-align: center;
-            background: rgba(255,250,245,0.95);
-            position: absolute; bottom: 0; left: 0; z-index: 5;
-            border-top: 1px solid rgba(0,0,0,0.05);
-            /* iOS 底部安全区适配 */
-            padding-bottom: max(20px, env(safe-area-inset-bottom));
+            max-width: 100%; max-height: 75vh;
+            box-shadow: 0 10px 40px rgba(100, 70, 50, 0.15);
+            object-fit: contain;
         }
 
+        /* 简介区域 */
+        .modal-text {
+            margin-top: 20px; text-align: center;
+            max-width: 800px;
+            color: var(--text-primary);
+            max-height: 12vh; overflow-y: auto; /* 超长滚动 */
+        }
+        .modal-text::-webkit-scrollbar { width: 4px; }
+        .modal-text::-webkit-scrollbar-thumb { background: rgba(139,69,19,0.2); border-radius: 4px; }
+
+        .modal-title { font-size: 28px; font-weight: bold; letter-spacing: 3px; margin: 0 0 5px 0; }
+        .modal-desc { font-size: 14px; line-height: 1.6; opacity: 0.9; }
+
+        /* 左下角浏览人数 */
+        .view-badge {
+            position: absolute; bottom: 20px; left: 30px;
+            display: flex; align-items: center; gap: 8px;
+            font-size: 13px; color: var(--text-secondary); font-family: sans-serif; font-weight: bold;
+        }
+        .view-badge svg { width: 18px; height: 18px; fill: var(--text-secondary); opacity: 0.8; }
+
+        /* 关闭按钮 */
         .close-btn {
             position: absolute; top: 20px; right: 20px;
             width: 40px; height: 40px; border-radius: 50%;
-            background: rgba(255,255,255,0.9); 
-            color: #333; font-size: 20px;
+            background: rgba(255,255,255,0.5); border: 1px solid rgba(255,255,255,0.8);
+            color: var(--text-primary); font-size: 20px;
             display: flex; justify-content: center; align-items: center;
-            cursor: pointer; z-index: 20; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            cursor: pointer; transition: all 0.3s;
         }
+        .close-btn:hover { background: #fff; transform: rotate(90deg); box-shadow: 0 0 15px rgba(212, 175, 55, 0.4); }
 
+        /* 进度条 */
         .progress-bar {
             position: fixed; bottom: 0; left: 0; height: 3px; background: var(--accent-gold);
-            width: 0%; z-index: 100; transform-origin: left;
+            width: 0%; z-index: 100;
         }
+        
+        /* 暂停自动播放按钮 (可选) */
+        .play-status {
+            position: fixed; bottom: 20px; right: 20px;
+            font-size: 10px; color: var(--text-secondary); opacity: 0.5;
+            letter-spacing: 1px; z-index: 50;
+        }
+
     </style>
 </head>
 <body>
 
-    <canvas id="webgl-bg"></canvas>
-    <audio id="bgm" loop><source src="assets/music/还是会想你曼波.mp3" type="audio/mpeg"></audio>
-    <div id="music-btn">🎵</div>
     <div class="progress-bar"></div>
+    <div class="play-status">AUTO SCROLLING</div>
 
     <div class="modal" id="detail-modal">
         <div class="modal-content-box">
             <div class="close-btn" id="close-btn">✕</div>
-            <div class="modal-body">
-                <img src="" alt="" class="modal-img" id="modal-img">
-                <div class="modal-text">
-                    <div class="modal-title" id="m-title" style="font-size: 1.2rem; font-weight: bold; margin-bottom: 5px;"></div>
-                    <div class="modal-desc" id="m-desc" style="font-size: 0.9rem; opacity: 0.8; max-height: 10vh; overflow-y: auto;"></div>
-                </div>
+            <img src="" alt="" class="modal-img" id="modal-img">
+            
+            <div class="modal-text">
+                <div class="modal-title" id="m-title">标题</div>
+                <div class="modal-desc" id="m-desc">作品简介...</div>
+            </div>
+
+            <div class="view-badge">
+                <svg viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+                <span id="m-views">0</span>
             </div>
         </div>
     </div>
 
     <section class="intro-section">
         <h1 class="intro-title">YANXU</h1>
-        <p class="intro-subtitle">晨光画境 · GALLERY</p>
+        <p class="intro-subtitle">CHINESE PAINTING · 晨光画境</p>
+        <div class="scroll-hint">SCROLL TO EXPLORE</div>
     </section>
 
     <div class="gallery-wrapper" id="gallery-wrapper">
         </div>
 
     <script>
-        // === 0. 设备检测与性能降级配置 ===
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        const devicePixelRatio = Math.min(window.devicePixelRatio, 2); // 限制最大像素比为2，省电
-
-        // === 1. Three.js 背景 (移动端大幅优化) ===
-        const canvas = document.querySelector('#webgl-bg');
-        // 移动端关闭抗锯齿，显著提升帧率
-        const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: !isMobile });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(devicePixelRatio);
-
-        const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0xfff0e0, 0.001);
-
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.z = 5;
-
-        // 移动端减少粒子数量：PC 1200 -> Mobile 300
-        const particlesCount = isMobile ? 300 : 1200;
-        const particlesGeometry = new THREE.BufferGeometry();
-        const posArray = new Float32Array(particlesCount * 3);
-        
-        for(let i = 0; i < particlesCount * 3; i++) {
-            posArray[i] = (Math.random() - 0.5) * (isMobile ? 10 : 15); // 移动端缩小范围
-        }
-        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-
-        const particlesMaterial = new THREE.PointsMaterial({
-            size: isMobile ? 0.06 : 0.04, // 移动端粒子稍微大一点
-            color: 0xd4af37,
-            transparent: true,
-            opacity: 0.6,
-            blending: THREE.AdditiveBlending
-        });
-        
-        const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
-        scene.add(particlesMesh);
-
-        function animateBG() {
-            requestAnimationFrame(animateBG);
-            particlesMesh.rotation.y += 0.0005;
-            // 移动端减少复杂的正弦计算
-            if(!isMobile) {
-                camera.position.y = Math.sin(Date.now() * 0.0005) * 0.2;
-            }
-            renderer.render(scene, camera);
-        }
-        animateBG();
-
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-
-        // === 2. 内容生成 ===
+        // === 1. 数据配置 (模拟50幅画) ===
         const artworks = [];
-        const baseCount = 12; 
-        for(let i=1; i<=20; i++) { // 减少DOM数量，20个足够展示，无限滚动可用Loop
+        const baseCount = 12; // 你有 eg1.jpg ~ eg12.jpg
+        
+        // 生成 50 个数据
+        for(let i=1; i<=50; i++) {
+            // 循环使用 1-12 的图片
             const imgIndex = (i - 1) % baseCount + 1;
+            
+            // 生成随机浏览数
+            const views = Math.floor(Math.random() * 20000) + 1200;
+
             artworks.push({
                 src: `assets/images/gallery/eg${imgIndex}.jpg`,
                 title: `作品 No.${i}`,
                 year: `202${i%5}`,
                 size: "138x69cm",
-                desc: "晨光熹微，水墨交融。随着光线的变化，画面的意境也随之流转。"
+                views: views.toLocaleString(),
+                desc: "这里是作品简介的占位符。晨光熹微，水墨交融。艺术家通过对传统笔墨的现代解构，展现了独特的东方韵味与人文关怀。画面细腻，意境深远。"
             });
         }
 
+        // === 2. 动态生成 DOM ===
         const wrapper = document.getElementById('gallery-wrapper');
-        // 动态计算宽度，避免过长导致渲染问题
-        const itemWidthVW = isMobile ? 88 : 50; 
-        const gapVW = isMobile ? 5 : 8;
-        // 修正宽度计算：(Item + Margin) * Count + Padding
-        wrapper.style.width = `${(itemWidthVW + gapVW) * artworks.length + 20}vw`;
+        // 计算宽度：每张图 50vw + 间距 8vw
+        wrapper.style.width = `${artworks.length * 58 + 50}vw`;
 
         artworks.forEach((art) => {
             const item = document.createElement('div');
             item.className = 'gallery-item';
+            
+            // 存数据到 data 属性，方便点击时读取
             item.innerHTML = `
-                <div class="art-container">
-                    <div class="art-card">
-                        <img src="${art.src}" class="art-img" alt="${art.title}" loading="lazy">
-                    </div>
-                    <div class="art-preview-info">
-                        <h2 class="art-preview-title">${art.title}</h2>
-                        <p class="art-preview-meta">${art.year} · ${art.size}</p>
-                    </div>
+                <div class="art-card" 
+                     onclick="openModal('${art.src}', '${art.title}', '${art.desc}', '${art.views}')">
+                    <img src="${art.src}" class="art-img" alt="${art.title}">
+                </div>
+                <div class="art-preview-info">
+                    <h2 class="art-preview-title">${art.title}</h2>
+                    <p class="art-preview-meta">${art.year} · ${art.size}</p>
                 </div>
             `;
-            // 绑定点击事件 (不直接用onclick HTML属性，保持纯净)
-            item.querySelector('.art-card').addEventListener('click', () => {
-                openModal(art);
-            });
             wrapper.appendChild(item);
         });
 
-        // === 3. GSAP 核心动画配置 (针对 iOS 深度优化) ===
+        // === 3. 动画逻辑 (GSAP + ScrollTrigger) ===
         gsap.registerPlugin(ScrollTrigger);
 
-        // 关键配置1：忽略移动端地址栏收缩触发的 resize，防止跳动
-        ScrollTrigger.config({ ignoreMobileResize: true });
+        // 开场动画
+        const tl = gsap.timeline();
+        tl.to(".intro-title", { opacity: 1, y: 0, duration: 1.5, ease: "power4.out" })
+          .to(".intro-subtitle", { opacity: 1, duration: 1, delay: -1 });
 
-        // 关键配置2：NormalizeScroll - 这是解决 iOS 滚动不跟手、抖动的终极方案
-        // 它会接管原生触摸滚动，统一转发给 ScrollTrigger
-        ScrollTrigger.normalizeScroll({
-            allowNestedScroll: true,
-            lockAxis: false, 
-            momentum: self => Math.min(3, self.velocityY / 1000), // 调整惯性
-            type: "touch,wheel,pointer", // 接管所有输入
-        });
-
+        // 横向滚动转换
         const sections = gsap.utils.toArray(".gallery-item");
         
-        // 横向滚动逻辑
         const scrollTween = gsap.to(sections, {
-            xPercent: -100 * (sections.length - 1),
-            ease: "none", // 必须是 none
+            xPercent: -100 * (sections.length - 1), 
+            ease: "none",
             scrollTrigger: {
                 trigger: ".gallery-wrapper",
                 pin: true,
-                scrub: 0.5, // 增加一点阻尼，让滚动更有“重量感”，不要太滑
-                snap: 0, // 移除 snap，让用户自由控制停留位置
-                end: () => "+=" + wrapper.offsetWidth
+                scrub: 1, // 增加阻尼感，更平滑
+                end: () => "+=" + document.querySelector(".gallery-wrapper").offsetWidth
             }
         });
 
-        // 进度条
+        // 更新进度条
         gsap.to(".progress-bar", {
-            width: "100%", ease: "none",
-            scrollTrigger: { trigger: ".gallery-wrapper", start: "top top", end: "bottom bottom", scrub: 0 }
+            width: "100%",
+            ease: "none",
+            scrollTrigger: {
+                trigger: ".gallery-wrapper",
+                start: "top top",
+                end: "bottom bottom",
+                scrub: 0
+            }
         });
 
-        // 视差效果：仅在 PC 端启用，移动端禁用以保证 60fps
-        if (!isMobile) {
-            sections.forEach((section) => {
-                gsap.to(section.querySelector(".art-img"), {
-                    xPercent: 15, ease: "none",
-                    scrollTrigger: {
-                        trigger: section,
-                        containerAnimation: scrollTween,
-                        start: "left right",
-                        end: "right left",
-                        scrub: true
-                    }
-                });
-            });
-        }
-
-        // 入场动画
-        const tl = gsap.timeline();
-        tl.to(".intro-title", { opacity: 1, y: 0, duration: 1.5, ease: "power3.out" })
-          .to(".intro-subtitle", { opacity: 1, duration: 1 }, "-=1");
-
-        // === 4. Lenis 平滑滚动 (与 ScrollTrigger 结合) ===
+        // === 4. 平滑滚动 & 自动播放 (Auto Scroll) ===
         const lenis = new Lenis({
-            duration: 1.2,
+            duration: 1.5, // 滚动惯性
             easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-            orientation: 'vertical', 
-            gestureOrientation: 'vertical',
-            smoothWheel: true,
-            touchMultiplier: 1.5, // 稍微提高触摸灵敏度
+            smoothWheel: true
         });
+
+        let isAutoScrolling = true; // 自动播放开关
+        let autoScrollSpeed = 1.5;  // 自动播放速度 (像素/帧)
 
         function raf(time) {
             lenis.raf(time);
+            
+            // 核心：自动滚动逻辑
+            // 如果开启了自动且弹窗没打开
+            if (isAutoScrolling && !document.body.classList.contains('modal-open')) {
+                // 模拟向下滚动，这会触发 ScrollTrigger 的横向动画
+                window.scrollBy(0, autoScrollSpeed);
+            }
+            
             requestAnimationFrame(raf);
         }
         requestAnimationFrame(raf);
 
-        // === 5. 自动滚动 (移动端优化) ===
-        // 移动端取消自动滚动，因为它会与用户手指打架。PC端保留缓慢漂浮。
-        let isAutoScrolling = !isMobile;
-        
-        function autoScrollLoop() {
-            if(isAutoScrolling && !document.body.classList.contains('modal-open') && window.scrollY > 100) {
-                // 极慢的速度，仅作为氛围
-                lenis.scrollTo(window.scrollY + 1, { immediate: true }); 
-            }
-            requestAnimationFrame(autoScrollLoop);
-        }
-        if(!isMobile) autoScrollLoop(); // 仅PC开启
+        // 交互逻辑：鼠标放上去暂停，移开继续
+        // 或者：用户手动滚动时，其实 scrollBy 会叠加，感觉就像“加速”
+        // 这里做一个简单的处理：鼠标悬停在画廊上时，变慢或暂停，方便点击
+        wrapper.addEventListener('mouseenter', () => { isAutoScrolling = false; document.querySelector('.play-status').innerText = "PAUSED"; });
+        wrapper.addEventListener('mouseleave', () => { isAutoScrolling = true; document.querySelector('.play-status').innerText = "AUTO SCROLLING"; });
 
-        // === 6. 弹窗交互 ===
+
+        // === 5. 弹窗逻辑 ===
         const modal = document.getElementById('detail-modal');
         const mImg = document.getElementById('modal-img');
         const mTitle = document.getElementById('m-title');
         const mDesc = document.getElementById('m-desc');
+        const mViews = document.getElementById('m-views');
         const closeBtn = document.getElementById('close-btn');
 
-        function openModal(art) {
-            mImg.src = art.src;
-            mTitle.innerText = art.title;
-            mDesc.innerText = art.desc;
+        window.openModal = function(src, title, desc, views) {
+            mImg.src = src;
+            mTitle.innerText = title;
+            mDesc.innerText = desc;
+            mViews.innerText = views;
+            
             modal.classList.add('active');
-            document.body.classList.add('modal-open');
-            lenis.stop(); // 停止外部滚动
-        }
+            document.body.classList.add('modal-open'); // 禁止自动滚动
+            lenis.stop(); // 禁止背景滚动
+        };
 
         function closeModal() {
             modal.classList.remove('active');
             document.body.classList.remove('modal-open');
             lenis.start();
+            // 稍微延迟一点恢复自动滚动，防止立刻跳动
+            setTimeout(() => { isAutoScrolling = true; }, 500);
         }
 
         closeBtn.onclick = closeModal;
-        modal.onclick = (e) => { if(e.target === modal || e.target.classList.contains('modal-content-box')) closeModal(); };
-
-        // === 7. 音乐控制 ===
-        const bgm = document.getElementById('bgm');
-        const musicBtn = document.getElementById('music-btn');
-        let musicReady = false;
-
-        musicBtn.addEventListener('click', () => {
-            if (bgm.paused) { bgm.play(); musicBtn.classList.add('playing'); } 
-            else { bgm.pause(); musicBtn.classList.remove('playing'); }
-        });
-        
-        // iOS 需要用户交互后才能播放音频，静默监听第一次点击
-        document.body.addEventListener('click', function initAudio() {
-            if(!musicReady) {
-                bgm.load(); // 预加载
-                musicReady = true;
-                document.body.removeEventListener('click', initAudio);
-            }
-        }, { once: true });
+        modal.onclick = (e) => {
+            if(e.target === modal || e.target.classList.contains('modal-content-box')) closeModal();
+        };
 
     </script>
 </body>
