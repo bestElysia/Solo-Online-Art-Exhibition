@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Yanxu | 晨光画境</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
@@ -13,31 +13,30 @@
     <style>
         /* === 1. 配色与基础 === */
         :root {
-            /* 背景留空，交给 Three.js */
             --text-primary: #5e4b35;
             --text-secondary: #8c7b66;
             --accent-gold: #d4af37;
-            --glass-bg: rgba(255, 255, 255, 0.6);
-            --glass-border: 1px solid rgba(255, 255, 255, 0.8);
+            --glass-bg: rgba(255, 255, 255, 0.7);
             --glass-shadow: 0 20px 50px rgba(210, 180, 140, 0.2);
         }
 
         body {
             margin: 0; padding: 0;
-            background: #fdfbfb; /* 加载时的底色 */
+            background: #fdfbfb;
             color: var(--text-primary);
             font-family: "Songti SC", "Noto Serif SC", serif;
             overflow-x: hidden;
+            /* 关键：防止 iOS 下拉刷新导致页面错位 */
             overscroll-behavior: none;
+            -webkit-font-smoothing: antialiased;
         }
 
         ::-webkit-scrollbar { width: 0px; }
 
-        /* 【新增】3D背景容器 */
         #webgl-bg {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: -1; /* 放在最底层 */
-            pointer-events: none; /* 不阻挡交互 */
+            z-index: -1; pointer-events: none;
+            /* 移动端性能优化：低端机可设为 opacity: 0.5 */
         }
 
         /* === 2. 开场与UI === */
@@ -45,19 +44,21 @@
             height: 100vh;
             display: flex; flex-direction: column;
             justify-content: center; align-items: center;
-            text-align: center; z-index: 10; relative;
+            text-align: center; z-index: 10; position: relative;
+            /* 硬件加速 */
+            will-change: transform, opacity;
         }
         .intro-title { 
             font-size: 8vw; font-weight: bold; letter-spacing: 10px; margin: 0; 
             background: linear-gradient(to right, #8b5e3c, #d4af37);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
             opacity: 0; transform: translateY(50px);
-            text-shadow: 0 5px 15px rgba(212, 175, 55, 0.2);
+            /* 减少阴影模糊半径以提升移动端性能 */
+            text-shadow: 0 2px 10px rgba(212, 175, 55, 0.15);
         }
         @media (max-width: 768px) { .intro-title { font-size: 15vw; letter-spacing: 5px; } }
         .intro-subtitle { font-size: 1.2rem; color: var(--text-secondary); margin-top: 20px; letter-spacing: 5px; opacity: 0; }
         
-        /* 音乐按钮 */
         #music-btn {
             position: fixed; top: 30px; right: 30px; z-index: 100;
             width: 40px; height: 40px; border-radius: 50%;
@@ -65,19 +66,19 @@
             display: flex; justify-content: center; align-items: center;
             cursor: pointer; opacity: 0.7; transition: all 0.3s;
             background: rgba(255,255,255,0.3); backdrop-filter: blur(5px);
-            animation: spin 5s linear infinite; animation-play-state: paused;
+            -webkit-tap-highlight-color: transparent; /* 移除点击高亮 */
         }
-        #music-btn.playing { animation-play-state: running; opacity: 1; background: rgba(255,255,255,0.8); }
+        #music-btn.playing { animation: spin 5s linear infinite; opacity: 1; background: rgba(255,255,255,0.8); }
         @keyframes spin { 100% { transform: rotate(360deg); } }
 
-        /* === 3. 画廊轨道 (布局优化) === */
+        /* === 3. 画廊轨道 === */
         .gallery-wrapper {
             height: 100vh;
             display: flex; align-items: center; flex-wrap: nowrap;
-            padding-left: 10vw; will-change: transform;
+            padding-left: 10vw; 
+            will-change: transform; /* 关键：告诉浏览器这个元素会动 */
         }
 
-        /* 单个画作容器：高度增加，容纳下方文字 */
         .gallery-item {
             width: 50vw; height: 75vh; 
             display: flex; justify-content: center; align-items: center;
@@ -85,126 +86,116 @@
         }
         @media (max-width: 768px) {
             .gallery-wrapper { padding-left: 5vw; }
-            .gallery-item { width: 85vw; height: 70vh; margin-right: 5vw; }
+            .gallery-item { width: 88vw; height: 65vh; margin-right: 5vw; }
         }
 
-        /* 【关键修改】垂直排列容器 */
         .art-container {
             width: 100%; height: 100%;
-            display: flex; flex-direction: column; /* 垂直排列 */
-            align-items: center; /* 水平居中 */
+            display: flex; flex-direction: column; align-items: center;
+            transform-style: preserve-3d;
         }
 
-        /* 画框：占据剩余空间，无边框 */
         .art-card {
-            position: relative; width: 100%; 
-            flex: 1; /* 撑满剩余高度 */
+            position: relative; width: 100%; flex: 1;
             overflow: hidden; cursor: pointer;
-            box-shadow: 0 25px 60px rgba(139, 69, 19, 0.15);
-            transition: transform 0.5s cubic-bezier(0.25, 1, 0.5, 1);
-            background: transparent; padding: 0;
+            box-shadow: 0 15px 40px rgba(139, 69, 19, 0.1); /* 减淡阴影提升性能 */
+            transition: transform 0.4s ease-out;
+            background: transparent;
+            -webkit-tap-highlight-color: transparent;
         }
+        
+        /* PC端才有 hover 放大，移动端移除 hover 效果防止粘滞 */
         @media (min-width: 769px) {
-            .art-card:hover { transform: scale(1.02); box-shadow: 0 35px 70px rgba(139, 69, 19, 0.25); }
+            .art-card:hover { transform: scale(1.02); }
+        }
+        /* 移动端点击反馈 */
+        @media (max-width: 768px) {
+            .art-card:active { transform: scale(0.98); }
         }
 
-        .art-img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.1s; }
+        .art-img { 
+            width: 100%; height: 100%; object-fit: cover; 
+            /* 移动端建议移除图片内部视差，或者极小幅度，否则掉帧 */
+            transition: transform 0.1s; 
+            will-change: transform;
+        }
 
-        /* 【关键修改】标题文字：固定在下方 */
         .art-preview-info {
-            position: relative; /* 不再绝对定位 */
-            margin-top: 20px; /* 与图片的间距 */
-            text-align: center;
-            flex-shrink: 0; /* 防止被压缩 */
-            opacity: 0.8; transition: opacity 0.3s;
+            position: relative; margin-top: 20px; text-align: center;
+            flex-shrink: 0; opacity: 0.8; transition: opacity 0.3s;
         }
-        /* 手机端常显，PC端hover显示更亮 */
-        @media (max-width: 768px) { .art-preview-info { opacity: 1; } }
-        @media (min-width: 769px) { .gallery-item:hover .art-preview-info { opacity: 1; } }
+        @media (max-width: 768px) { .art-preview-info { opacity: 1; margin-top: 15px; } }
         
         .art-preview-title { font-size: 20px; font-weight: bold; margin: 0 0 5px 0; letter-spacing: 2px; }
-        .art-preview-meta { font-size: 13px; color: var(--text-secondary); font-family: sans-serif; margin: 0; }
+        .art-preview-meta { font-size: 13px; color: var(--text-secondary); margin: 0; }
 
-        /* === 4. 液态玻璃弹窗 === */
+        /* === 4. 优化后的弹窗 === */
         .modal {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(255, 245, 235, 0.3); /* 更透的背景，露出3D */
-            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.2); /* 降低透明度，减少重绘 */
+            /* backdrop-filter 性能消耗极大，移动端若卡顿可去掉 */
+            backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
             z-index: 999;
             display: flex; justify-content: center; align-items: center;
-            opacity: 0; pointer-events: none; transition: opacity 0.4s ease;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
         }
         .modal.active { opacity: 1; pointer-events: auto; }
 
         .modal-content-box {
             position: relative;
-            width: 96vw; height: 96vh; max-width: 1800px;
+            width: 95vw; height: 90vh; max-width: 1600px;
             background: var(--glass-bg);
-            backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
-            border: 2px solid rgba(255, 255, 255, 0.6);
-            border-radius: 24px; box-shadow: var(--glass-shadow);
-            padding: 0;
-            display: flex; flex-direction: column; align-items: center;
-            overflow: hidden;
-            transform: scale(0.95); transition: transform 0.5s;
+            /* 移动端减少 blur 强度 */
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            border-radius: 20px; box-shadow: var(--glass-shadow);
+            transform: scale(0.96); transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex; flex-direction: column; overflow: hidden;
         }
         .modal.active .modal-content-box { transform: scale(1); }
-        @media (max-width: 768px) { .modal-content-box { width: 100vw; height: 100vh; border: none; border-radius: 0; } }
-
-        .modal-body {
-            position: relative; width: 100%; height: 100%;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
+        @media (max-width: 768px) { 
+            .modal-content-box { width: 100vw; height: 100vh; border-radius: 0; border: none; } 
         }
+
+        .modal-body { width: 100%; height: 100%; position: relative; }
+        
         .modal-img {
-            width: auto; height: auto; max-width: 100%; max-height: 82vh;
-            object-fit: contain; filter: drop-shadow(0 20px 40px rgba(90, 60, 40, 0.3)); flex-shrink: 1;
+            width: 100%; height: 100%;
+            object-fit: contain; /* 确保图片完整显示 */
+            padding-bottom: 20vh; /* 为文字留出空间 */
+            box-sizing: border-box;
         }
+        
         .modal-text {
-            width: 100%; padding: 20px 40px 40px 40px; box-sizing: border-box;
+            width: 100%; padding: 20px; box-sizing: border-box;
             text-align: center;
-            /* 渐变背景遮罩 */
-            background: linear-gradient(to top, rgba(255,250,245,0.95) 20%, rgba(255,250,245,0.6) 80%, transparent);
+            background: rgba(255,250,245,0.95);
             position: absolute; bottom: 0; left: 0; z-index: 5;
-            display: flex; flex-direction: column; align-items: center;
+            border-top: 1px solid rgba(0,0,0,0.05);
+            /* iOS 底部安全区适配 */
+            padding-bottom: max(20px, env(safe-area-inset-bottom));
         }
-        .modal-title { font-size: 26px; font-weight: bold; letter-spacing: 2px; margin: 0 0 5px 0; }
-        .modal-desc { font-size: 14px; line-height: 1.6; opacity: 0.95; max-width: 800px; max-height: 15vh; overflow-y: auto; }
-
-        .view-badge {
-            position: absolute; bottom: 20px; left: 25px; z-index: 10;
-            display: flex; align-items: center; gap: 6px;
-            font-size: 13px; color: #5e4b35; font-weight: bold;
-            background: rgba(255,255,255,0.6); padding: 6px 12px; border-radius: 20px;
-            backdrop-filter: blur(5px); box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-        }
-        .view-badge svg { width: 16px; height: 16px; fill: #5e4b35; }
 
         .close-btn {
             position: absolute; top: 20px; right: 20px;
-            width: 44px; height: 44px; border-radius: 50%;
-            background: rgba(255,255,255,0.8); 
-            color: #333; font-size: 24px;
+            width: 40px; height: 40px; border-radius: 50%;
+            background: rgba(255,255,255,0.9); 
+            color: #333; font-size: 20px;
             display: flex; justify-content: center; align-items: center;
-            cursor: pointer; z-index: 20; box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            transition: all 0.3s;
+            cursor: pointer; z-index: 20; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
-        .close-btn:hover { transform: rotate(90deg) scale(1.1); background: #fff; }
 
         .progress-bar {
-            position: fixed; bottom: 0; left: 0; height: 4px; background: var(--accent-gold);
-            width: 0%; z-index: 100;
+            position: fixed; bottom: 0; left: 0; height: 3px; background: var(--accent-gold);
+            width: 0%; z-index: 100; transform-origin: left;
         }
     </style>
 </head>
 <body>
 
     <canvas id="webgl-bg"></canvas>
-
-    <audio id="bgm" loop>
-        <source src="assets/music/还是会想你曼波.mp3" type="audio/mpeg">
-    </audio>
+    <audio id="bgm" loop><source src="assets/music/还是会想你曼波.mp3" type="audio/mpeg"></audio>
     <div id="music-btn">🎵</div>
-
     <div class="progress-bar"></div>
 
     <div class="modal" id="detail-modal">
@@ -213,147 +204,105 @@
             <div class="modal-body">
                 <img src="" alt="" class="modal-img" id="modal-img">
                 <div class="modal-text">
-                    <div class="modal-title" id="m-title">标题</div>
-                    <div class="modal-desc" id="m-desc">简介...</div>
+                    <div class="modal-title" id="m-title" style="font-size: 1.2rem; font-weight: bold; margin-bottom: 5px;"></div>
+                    <div class="modal-desc" id="m-desc" style="font-size: 0.9rem; opacity: 0.8; max-height: 10vh; overflow-y: auto;"></div>
                 </div>
-            </div>
-            <div class="view-badge">
-                <svg viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
-                <span id="m-views">0</span>
             </div>
         </div>
     </div>
 
     <section class="intro-section">
         <h1 class="intro-title">YANXU</h1>
-        <p class="intro-subtitle">晨光画境 · CHINESE PAINTING</p>
+        <p class="intro-subtitle">晨光画境 · GALLERY</p>
     </section>
 
     <div class="gallery-wrapper" id="gallery-wrapper">
         </div>
 
     <script>
-        // === 【新增】Three.js 3D背景逻辑 ===
+        // === 0. 设备检测与性能降级配置 ===
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        const devicePixelRatio = Math.min(window.devicePixelRatio, 2); // 限制最大像素比为2，省电
+
+        // === 1. Three.js 背景 (移动端大幅优化) ===
         const canvas = document.querySelector('#webgl-bg');
-        const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+        // 移动端关闭抗锯齿，显著提升帧率
+        const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: !isMobile });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // 限制像素比优化性能
+        renderer.setPixelRatio(devicePixelRatio);
 
         const scene = new THREE.Scene();
-        // 暖色雾气，让远处背景柔和
         scene.fog = new THREE.FogExp2(0xfff0e0, 0.001);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         camera.position.z = 5;
 
-        // 创建晨光粒子云
+        // 移动端减少粒子数量：PC 1200 -> Mobile 300
+        const particlesCount = isMobile ? 300 : 1200;
         const particlesGeometry = new THREE.BufferGeometry();
-        const particlesCount = 1500; // 粒子数量
         const posArray = new Float32Array(particlesCount * 3);
         
         for(let i = 0; i < particlesCount * 3; i++) {
-            // 在一个大范围内随机生成点
-            posArray[i] = (Math.random() - 0.5) * 15;
+            posArray[i] = (Math.random() - 0.5) * (isMobile ? 10 : 15); // 移动端缩小范围
         }
         particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
 
-        // 暖金色材质
         const particlesMaterial = new THREE.PointsMaterial({
-            size: 0.04,
-            color: 0xd4af37, // 金色
+            size: isMobile ? 0.06 : 0.04, // 移动端粒子稍微大一点
+            color: 0xd4af37,
             transparent: true,
             opacity: 0.6,
-            blending: THREE.AdditiveBlending // 发光叠加效果
+            blending: THREE.AdditiveBlending
         });
         
-        // 创建两个粒子系统，叠加出层次感
         const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
         scene.add(particlesMesh);
-        
-        const particlesMesh2 = new THREE.Points(particlesGeometry, new THREE.PointsMaterial({
-             size: 0.02, color: 0xff7f50, transparent:true, opacity:0.4, blending: THREE.AdditiveBlending
-        }));
-        particlesMesh2.rotation.x = Math.PI / 2;
-        scene.add(particlesMesh2);
 
-        // 动画循环
         function animateBG() {
             requestAnimationFrame(animateBG);
-            // 缓慢旋转
             particlesMesh.rotation.y += 0.0005;
-            particlesMesh.rotation.x += 0.0002;
-            particlesMesh2.rotation.y -= 0.0003;
-            particlesMesh2.rotation.z += 0.0001;
-            // 相机缓慢移动，制造视差
-            camera.position.y = Math.sin(Date.now() * 0.0005) * 0.2;
+            // 移动端减少复杂的正弦计算
+            if(!isMobile) {
+                camera.position.y = Math.sin(Date.now() * 0.0005) * 0.2;
+            }
             renderer.render(scene, camera);
         }
         animateBG();
 
-        // 窗口调整
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
-
-        // === 以下为原有逻辑 (部分优化) ===
-
-        // 音乐控制
-        const bgm = document.getElementById('bgm');
-        const musicBtn = document.getElementById('music-btn');
-        let musicStarted = false;
-        function tryPlayMusic() {
-            if (musicStarted) return;
-            bgm.play().then(() => {
-                musicStarted = true; musicBtn.classList.add('playing');
-                document.removeEventListener('click', tryPlayMusic);
-                document.removeEventListener('touchstart', tryPlayMusic);
-                document.removeEventListener('scroll', tryPlayMusic);
-            }).catch(() => {});
-        }
-        document.addEventListener('click', tryPlayMusic);
-        document.addEventListener('touchstart', tryPlayMusic);
-        document.addEventListener('scroll', tryPlayMusic);
-        musicBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            if (bgm.paused) { bgm.play(); musicBtn.classList.add('playing'); }
-            else { bgm.pause(); musicBtn.classList.remove('playing'); }
-        });
-
-        // 数据配置
+        // === 2. 内容生成 ===
         const artworks = [];
         const baseCount = 12; 
-        const placeholderDesc = "晨光熹微，水墨交融。这幅作品采用传统的中国画颜料与现代构图相结合，试图在二维平面中构建出无限的空间感。色彩的运用参考了敦煌壁画的矿物色系，既古朴又充满生命力。随着光线的变化，画面的意境也随之流转，观者可从中体悟到艺术家对自然与人文的深刻思考。";
-        for(let i=1; i<=50; i++) {
+        for(let i=1; i<=20; i++) { // 减少DOM数量，20个足够展示，无限滚动可用Loop
             const imgIndex = (i - 1) % baseCount + 1;
-            const views = Math.floor(Math.random() * 20000) + 1200;
             artworks.push({
                 src: `assets/images/gallery/eg${imgIndex}.jpg`,
                 title: `作品 No.${i}`,
                 year: `202${i%5}`,
                 size: "138x69cm",
-                views: views.toLocaleString(),
-                desc: placeholderDesc 
+                desc: "晨光熹微，水墨交融。随着光线的变化，画面的意境也随之流转。"
             });
         }
 
-        // 动态生成 DOM (结构已优化)
         const wrapper = document.getElementById('gallery-wrapper');
-        const isMobile = window.innerWidth <= 768;
-        const itemWidth = isMobile ? 90 : 58; 
-        wrapper.style.width = `${artworks.length * itemWidth + 50}vw`;
+        // 动态计算宽度，避免过长导致渲染问题
+        const itemWidthVW = isMobile ? 88 : 50; 
+        const gapVW = isMobile ? 5 : 8;
+        // 修正宽度计算：(Item + Margin) * Count + Padding
+        wrapper.style.width = `${(itemWidthVW + gapVW) * artworks.length + 20}vw`;
 
         artworks.forEach((art) => {
             const item = document.createElement('div');
             item.className = 'gallery-item';
-            // 【结构修改】art-container 包含 card 和 info
             item.innerHTML = `
                 <div class="art-container">
-                    <div class="art-card" 
-                         onclick="openModal('${art.src}', '${art.title}', '${art.desc}', '${art.views}')">
-                        <img src="${art.src}" class="art-img" alt="${art.title}">
+                    <div class="art-card">
+                        <img src="${art.src}" class="art-img" alt="${art.title}" loading="lazy">
                     </div>
                     <div class="art-preview-info">
                         <h2 class="art-preview-title">${art.title}</h2>
@@ -361,55 +310,143 @@
                     </div>
                 </div>
             `;
+            // 绑定点击事件 (不直接用onclick HTML属性，保持纯净)
+            item.querySelector('.art-card').addEventListener('click', () => {
+                openModal(art);
+            });
             wrapper.appendChild(item);
         });
 
-        // GSAP动画
+        // === 3. GSAP 核心动画配置 (针对 iOS 深度优化) ===
         gsap.registerPlugin(ScrollTrigger);
-        const tl = gsap.timeline();
-        tl.to(".intro-title", { opacity: 1, y: 0, duration: 1.5, ease: "power4.out" })
-          .to(".intro-subtitle", { opacity: 1, duration: 1, delay: -1 });
+
+        // 关键配置1：忽略移动端地址栏收缩触发的 resize，防止跳动
+        ScrollTrigger.config({ ignoreMobileResize: true });
+
+        // 关键配置2：NormalizeScroll - 这是解决 iOS 滚动不跟手、抖动的终极方案
+        // 它会接管原生触摸滚动，统一转发给 ScrollTrigger
+        ScrollTrigger.normalizeScroll({
+            allowNestedScroll: true,
+            lockAxis: false, 
+            momentum: self => Math.min(3, self.velocityY / 1000), // 调整惯性
+            type: "touch,wheel,pointer", // 接管所有输入
+        });
 
         const sections = gsap.utils.toArray(".gallery-item");
+        
+        // 横向滚动逻辑
         const scrollTween = gsap.to(sections, {
-            xPercent: -100 * (sections.length - 1), ease: "none",
-            scrollTrigger: { trigger: ".gallery-wrapper", pin: true, scrub: 1, end: () => "+=" + document.querySelector(".gallery-wrapper").offsetWidth }
+            xPercent: -100 * (sections.length - 1),
+            ease: "none", // 必须是 none
+            scrollTrigger: {
+                trigger: ".gallery-wrapper",
+                pin: true,
+                scrub: 0.5, // 增加一点阻尼，让滚动更有“重量感”，不要太滑
+                snap: 0, // 移除 snap，让用户自由控制停留位置
+                end: () => "+=" + wrapper.offsetWidth
+            }
         });
+
+        // 进度条
         gsap.to(".progress-bar", {
             width: "100%", ease: "none",
             scrollTrigger: { trigger: ".gallery-wrapper", start: "top top", end: "bottom bottom", scrub: 0 }
         });
+
+        // 视差效果：仅在 PC 端启用，移动端禁用以保证 60fps
         if (!isMobile) {
             sections.forEach((section) => {
                 gsap.to(section.querySelector(".art-img"), {
                     xPercent: 15, ease: "none",
-                    scrollTrigger: { trigger: section, containerAnimation: scrollTween, start: "left right", end: "right left", scrub: true }
+                    scrollTrigger: {
+                        trigger: section,
+                        containerAnimation: scrollTween,
+                        start: "left right",
+                        end: "right left",
+                        scrub: true
+                    }
                 });
             });
         }
 
-        // 平滑滚动 & 自动播放 & iOS触摸
-        const lenis = new Lenis({ duration: 1.5, easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), smoothWheel: true, orientation: 'vertical', gestureOrientation: 'vertical' });
-        let isAutoScrolling = true;
-        let autoScrollSpeed = isMobile ? 0.8 : 1.5;
-        let touchStartX = 0; let touchStartY = 0;
-        document.addEventListener('touchstart', (e) => { isAutoScrolling = false; touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY; }, { passive: false });
-        document.addEventListener('touchmove', (e) => { if (document.body.classList.contains('modal-open')) return; const diffX = touchStartX - e.touches[0].clientX; const diffY = touchStartY - e.touches[0].clientY; if (Math.abs(diffX) > Math.abs(diffY)) { e.preventDefault(); window.scrollBy(0, diffX * 2.5); touchStartX = e.touches[0].clientX; } }, { passive: false });
-        document.addEventListener('touchend', () => { setTimeout(() => { if(!document.body.classList.contains('modal-open')) isAutoScrolling = true; }, 1000); });
-        function raf(time) { lenis.raf(time); if (isAutoScrolling && !document.body.classList.contains('modal-open')) window.scrollBy(0, autoScrollSpeed); requestAnimationFrame(raf); }
+        // 入场动画
+        const tl = gsap.timeline();
+        tl.to(".intro-title", { opacity: 1, y: 0, duration: 1.5, ease: "power3.out" })
+          .to(".intro-subtitle", { opacity: 1, duration: 1 }, "-=1");
+
+        // === 4. Lenis 平滑滚动 (与 ScrollTrigger 结合) ===
+        const lenis = new Lenis({
+            duration: 1.2,
+            easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+            orientation: 'vertical', 
+            gestureOrientation: 'vertical',
+            smoothWheel: true,
+            touchMultiplier: 1.5, // 稍微提高触摸灵敏度
+        });
+
+        function raf(time) {
+            lenis.raf(time);
+            requestAnimationFrame(raf);
+        }
         requestAnimationFrame(raf);
 
-        // 弹窗逻辑
+        // === 5. 自动滚动 (移动端优化) ===
+        // 移动端取消自动滚动，因为它会与用户手指打架。PC端保留缓慢漂浮。
+        let isAutoScrolling = !isMobile;
+        
+        function autoScrollLoop() {
+            if(isAutoScrolling && !document.body.classList.contains('modal-open') && window.scrollY > 100) {
+                // 极慢的速度，仅作为氛围
+                lenis.scrollTo(window.scrollY + 1, { immediate: true }); 
+            }
+            requestAnimationFrame(autoScrollLoop);
+        }
+        if(!isMobile) autoScrollLoop(); // 仅PC开启
+
+        // === 6. 弹窗交互 ===
         const modal = document.getElementById('detail-modal');
         const mImg = document.getElementById('modal-img');
         const mTitle = document.getElementById('m-title');
         const mDesc = document.getElementById('m-desc');
-        const mViews = document.getElementById('m-views');
         const closeBtn = document.getElementById('close-btn');
-        window.openModal = function(src, title, desc, views) { mImg.src = src; mTitle.innerText = title; mDesc.innerText = desc; mViews.innerText = views; modal.classList.add('active'); document.body.classList.add('modal-open'); lenis.stop(); };
-        function closeModal() { modal.classList.remove('active'); document.body.classList.remove('modal-open'); lenis.start(); setTimeout(() => { isAutoScrolling = true; }, 500); }
+
+        function openModal(art) {
+            mImg.src = art.src;
+            mTitle.innerText = art.title;
+            mDesc.innerText = art.desc;
+            modal.classList.add('active');
+            document.body.classList.add('modal-open');
+            lenis.stop(); // 停止外部滚动
+        }
+
+        function closeModal() {
+            modal.classList.remove('active');
+            document.body.classList.remove('modal-open');
+            lenis.start();
+        }
+
         closeBtn.onclick = closeModal;
         modal.onclick = (e) => { if(e.target === modal || e.target.classList.contains('modal-content-box')) closeModal(); };
+
+        // === 7. 音乐控制 ===
+        const bgm = document.getElementById('bgm');
+        const musicBtn = document.getElementById('music-btn');
+        let musicReady = false;
+
+        musicBtn.addEventListener('click', () => {
+            if (bgm.paused) { bgm.play(); musicBtn.classList.add('playing'); } 
+            else { bgm.pause(); musicBtn.classList.remove('playing'); }
+        });
+        
+        // iOS 需要用户交互后才能播放音频，静默监听第一次点击
+        document.body.addEventListener('click', function initAudio() {
+            if(!musicReady) {
+                bgm.load(); // 预加载
+                musicReady = true;
+                document.body.removeEventListener('click', initAudio);
+            }
+        }, { once: true });
+
     </script>
 </body>
 </html>
