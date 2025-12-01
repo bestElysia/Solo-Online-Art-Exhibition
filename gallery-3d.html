@@ -21,13 +21,12 @@
             margin: 0; padding: 0;
             width: 100%; 
             min-height: 100vh;
-            /* 苹果系统字体栈 */
             font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Helvetica, Arial, sans-serif;
             -webkit-font-smoothing: antialiased;
             background: #fdfbfb;
             color: var(--text-dark);
             overscroll-behavior: none; 
-            touch-action: none; /* 接管触摸，实现自定义滑动方向 */
+            touch-action: none; /* 接管触摸，防止 iOS 回弹和原生滚动冲突 */
         }
 
         html.lenis, html.lenis body { height: auto; }
@@ -66,13 +65,11 @@
             animation: gradientFlow 20s ease infinite;
             transition: opacity 2s ease;
         }
-
         .noise-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             z-index: -1; opacity: 0.3; pointer-events: none;
             background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='1'/%3E%3C/svg%3E");
         }
-
         @keyframes gradientFlow {
             0% { background-position: 0% 50%; }
             50% { background-position: 100% 50%; }
@@ -84,7 +81,6 @@
             position: fixed; top: 25px; right: 25px; z-index: 800;
             display: flex; gap: 15px; align-items: center;
         }
-
         .control-btn {
             width: 42px; height: 42px; border-radius: 50%;
             background: rgba(255, 255, 255, 0.4); 
@@ -97,11 +93,10 @@
         }
         body.started .control-btn { opacity: 1; transform: scale(1); }
         .control-btn:hover { background: #fff; transform: scale(1.1); box-shadow: 0 8px 20px rgba(0,0,0,0.08); }
-        
         .music-btn svg { width: 18px; height: 18px; fill: var(--text-dark); }
         .music-btn.playing { background: #fff; box-shadow: 0 0 0 4px rgba(255,255,255,0.3); }
 
-        /* === 5. 开场 Intro (无按钮版) === */
+        /* === 5. 开场 Intro === */
         .intro-section {
             height: 100vh; width: 100%;
             display: flex; flex-direction: column;
@@ -119,7 +114,6 @@
             display: flex; flex-direction: column; align-items: center;
         }
         .intro-content.visible { opacity: 1; }
-
         .intro-section.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
         
         .intro-title { 
@@ -130,7 +124,6 @@
         }
         .intro-subtitle { font-size: 1.2rem; color: var(--text-light); margin-top: 20px; letter-spacing: 4px; font-weight: 400; }
         
-        /* 替代按钮的滚动提示 */
         .scroll-to-enter-hint {
             margin-top: 80px;
             display: flex; flex-direction: column; align-items: center; gap: 10px;
@@ -195,7 +188,7 @@
         .art-preview-title { font-size: 22px; font-weight: 600; margin: 0 0 6px 0; letter-spacing: 1px; color: var(--text-dark); }
         .art-preview-meta { font-size: 13px; color: var(--text-light); letter-spacing: 0.5px; font-weight: 400;}
         
-        /* === 7. 液态玻璃弹窗 === */
+        /* === 7. 液态玻璃弹窗 (布局优化) === */
         .modal {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(255, 255, 255, 0.2); 
@@ -239,45 +232,53 @@
             border-top: 1px solid rgba(255,255,255,0.6);
             display: flex; flex-direction: column;
             background: rgba(255,255,255,0.3);
+            /* 关键：限制高度以支持滚动 */
+            max-height: 60%; 
         }
 
         @media (min-width: 1024px) {
             .modal-content-box { flex-direction: row; }
             .modal-img-wrapper { height: 100%; width: 60%; border-right: 1px solid rgba(255,255,255,0.6); border-bottom: none; padding: 50px;}
-            .modal-text { height: 100%; width: 40%; border-top: none; }
+            .modal-text { height: 100%; width: 40%; border-top: none; max-height: 100%; }
         }
 
         .modal-text-inner {
             padding: 40px; height: 100%;
             display: flex; flex-direction: column; justify-content: center;
+            /* 确保内部容器不溢出 */
+            overflow: hidden; 
         }
-        .modal-title { font-size: 30px; font-weight: 700; margin: 0 0 10px 0; letter-spacing: 1px; color: #1d1d1f; }
+        .modal-title { font-size: 30px; font-weight: 700; margin: 0 0 10px 0; letter-spacing: 1px; color: #1d1d1f; flex-shrink: 0; }
         
-        /* 修改后的元数据行：去除卡片背景，自然拼接 */
+        /* 修复字体大小统一 */
         .modal-meta-row {
-            display: flex; align-items: center; gap: 10px; /* 间距缩小 */
+            display: flex; align-items: center; gap: 10px;
             margin-bottom: 25px;
             letter-spacing: 0.5px;
-            color: #86868b; font-size: 13px; font-weight: 500;
+            color: #86868b; font-size: 14px; font-weight: 500;
+            flex-shrink: 0; /* 防止标题元数据被压缩 */
         }
-        /* 分隔符 */
-        .modal-meta-divider {
-            margin: 0 2px; opacity: 0.5;
-        }
-        /* 纯文本样式的浏览量 */
+        .modal-meta-divider { margin: 0 2px; opacity: 0.5; }
         .modal-views-text {
             display: flex; align-items: center; gap: 5px;
+            font-size: 14px; /* 强制统一大小 */
         }
-        .modal-views-text svg { width: 14px; height: 14px; fill: #86868b; }
+        .modal-views-text svg { width: 15px; height: 15px; fill: #86868b; }
 
+        /* 修复长文本滚动条 */
         .modal-desc-scroll {
             font-size: 15px; line-height: 1.8; text-align: justify; color: #424245; 
-            max-height: 45vh; overflow-y: auto; padding-right: 15px;
-            overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
+            /* 填满剩余空间，但至少有高度 */
+            flex-grow: 1; 
+            overflow-y: auto; 
+            padding-right: 10px; /* 给滚动条留位置 */
+            overscroll-behavior: contain; 
+            -webkit-overflow-scrolling: touch;
         }
-        .modal-desc-scroll::-webkit-scrollbar { width: 4px; }
-        .modal-desc-scroll::-webkit-scrollbar-track { background: transparent; }
-        .modal-desc-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 10px; }
+        /* 显式滚动条样式 */
+        .modal-desc-scroll::-webkit-scrollbar { width: 5px; background: rgba(0,0,0,0.03); }
+        .modal-desc-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 10px; }
+        .modal-desc-scroll::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.4); }
 
         .close-btn {
             position: absolute; top: 20px; right: 20px;
@@ -300,10 +301,10 @@
             .art-card { height: 50vh; }
             .modal-content-box { width: 95vw; height: 92vh; border-radius: 16px; flex-direction: column;}
             .modal-img-wrapper { height: 40%; padding: 20px; }
-            .modal-text { height: 60%; width: 100%; border-top: 1px solid rgba(255,255,255,0.6); }
+            .modal-text { height: 60%; width: 100%; border-top: 1px solid rgba(255,255,255,0.6); max-height: 60%; }
             .modal-text-inner { padding: 25px; justify-content: flex-start; }
             .modal-title { font-size: 24px; margin-bottom: 5px;}
-            .modal-desc-scroll { max-height: 100%; font-size: 15px; margin-top: 10px;} 
+            .modal-desc-scroll { font-size: 15px; margin-top: 10px;} 
             .controls-area { top: 20px; right: 20px; gap: 10px; }
             .scroll-to-enter-hint { margin-top: 50px; }
         }
@@ -483,7 +484,6 @@
             item.style.width = `${itemWidthVw}vw`;
             item.style.marginRight = `${itemMarginVw}vw`;
             
-            // 外面只保留年份
             item.innerHTML = `
                 <div class="art-card" onclick="openModal(${index})">
                     <img src="${art.src}" class="art-img" alt="Artwork" decoding="async">
@@ -498,6 +498,8 @@
 
         const totalVw = paddingLeftVw + (displayArtworks.length * singleItemTotalVw);
         wrapper.style.width = `${totalVw}vw`;
+        
+        // 计算无限循环的节点宽度
         const oneSetWidthPx = (totalItemsCount * singleItemTotalVw) * (window.innerWidth / 100);
 
         preloadImages();
@@ -537,7 +539,7 @@
             }
         });
 
-        // === 6. 核心逻辑：滑动进入与触控反转 ===
+        // === 6. 核心逻辑：触控反转与无限循环 ===
         let isGalleryStarted = false;
         let isUserScrolling = false;
         let autoScrollSpeed = isMobile ? 1.0 : 1.8; 
@@ -546,12 +548,8 @@
         // 监听滚动以触发“进入画境”
         lenis.on('scroll', (e) => {
             if (!isGalleryStarted) {
-                // 如果向下滚动超过一定阈值，则启动画廊
-                if (e.animatedScroll > 50) {
-                    startGallery();
-                }
+                if (e.animatedScroll > 50) startGallery();
             } else {
-                // 画廊启动后的停止检测
                 clearTimeout(scrollTimeout);
                 scrollTimeout = setTimeout(() => {
                     if(!document.body.classList.contains('modal-open')) {
@@ -561,7 +559,7 @@
             }
         });
 
-        // == 移动端触控反转逻辑 (核心修改) ==
+        // == 移动端触控反转逻辑 (Fixed) ==
         let touchStartX = 0;
         let touchStartY = 0;
         
@@ -582,42 +580,32 @@
             const deltaX = touchX - touchStartX;
             const deltaY = touchY - touchStartY;
 
-            // 如果是水平滑动主导
+            // 水平滑动主导
             if(Math.abs(deltaX) > Math.abs(deltaY)) {
-                e.preventDefault(); // 阻止浏览器默认行为
+                e.preventDefault(); 
                 
-                // 需求：向左滑动屏幕(deltaX < 0)，图片向右(回顾上一张 -> 滚动条向上)
-                // Lenis vertical scroll down -> GSAP moves images left (Standard)
-                // We want images right -> Lenis scroll up (Decrease)
-                
-                // Sensitivity multiplier
+                // 修复逻辑：手指左滑 (deltaX < 0) -> 内容左移 -> Lenis scroll 增加
+                // deltaX 是负数，我们需要增加 scroll，所以是 - deltaX
+                // sensitivity 控制灵敏度
                 const sensitivity = 3.5;
-
-                // 标准逻辑：Finger Left (deltaX < 0) -> Content Left -> Scroll Increase
-                // 反转逻辑：Finger Left (deltaX < 0) -> Content Right -> Scroll Decrease
+                lenis.scrollTo(lenis.scroll - (deltaX * sensitivity), { immediate: true });
                 
-                // Lenis.scrollTo 接受目标值，我们基于当前值偏移
-                // deltaX 为负 -> 我们希望 scroll 减小 -> 所以 + deltaX (因为正加负等于减)
-                // 这样：手指向左滑(负值)，scroll值变小，GSAP往回退，图片向右走。完美。
-                lenis.scrollTo(lenis.scroll + (deltaX * sensitivity), { immediate: true });
-                
-                // 更新起始点，实现连续拖动
                 touchStartX = touchX;
             }
         }, {passive: false});
-
-        window.addEventListener('touchend', () => {
-             // 松手后交给 snap 逻辑处理
-        });
-
 
         // === 动画帧循环 ===
         function raf(time) {
             lenis.raf(time);
             
-            // 无限循环
+            // 无限循环逻辑 (修复版)
+            // 当滚动超过第一组宽度时，跳回开头
             if (lenis.scroll >= oneSetWidthPx) {
                 lenis.scrollTo(lenis.scroll - oneSetWidthPx, { immediate: true });
+            }
+            // 防止往回滚过头 (可选，增强体验)
+            if (lenis.scroll < 0) {
+                 lenis.scrollTo(lenis.scroll + oneSetWidthPx, { immediate: true });
             }
 
             // 自动播放
