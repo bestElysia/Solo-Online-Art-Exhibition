@@ -12,24 +12,24 @@
     <style>
         /* === 1. 基础设置与主题变量 === */
         :root {
-            --text-dark: #1d1d1f;       /* Apple 深空灰 */
-            --text-light: #86868b;      /* Apple 浅灰 */
-            --accent-gold: #cfa858;     /* 晨光金 */
+            --text-dark: #1d1d1f;       
+            --text-light: #86868b;      
+            --accent-gold: #cfa858;     
         }
 
         html, body {
             margin: 0; padding: 0;
             width: 100%; 
             min-height: 100vh;
-            /* 苹果系统字体栈 */
             font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Helvetica, Arial, sans-serif;
             -webkit-font-smoothing: antialiased;
             background: #fdfbfb;
             color: var(--text-dark);
             overscroll-behavior: none; 
-            /* 关键：全局禁止默认触摸，防止画廊拖拽时页面抖动，但会在弹窗文字区单独开启 */
+            /* 关键：禁止原生滚动和缩放，完全由 JS 接管触摸 */
             touch-action: none; 
-            user-select: none; /* 防止长按选中文本干扰滑动 */
+            user-select: none;
+            -webkit-user-select: none;
         }
 
         html.lenis, html.lenis body { height: auto; }
@@ -146,7 +146,7 @@
         @keyframes pulseFade { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
         @keyframes scrollDown { 0% { top: 6px; opacity: 1; } 100% { top: 20px; opacity: 0; } }
 
-        /* === 6. 画廊轨道 === */
+        /* === 6. 画廊轨道 (视差) === */
         .gallery-container {
             width: 100%; height: 100vh;
             overflow: hidden; display: flex; align-items: center;
@@ -159,7 +159,7 @@
         .gallery-wrapper {
             display: flex; align-items: center; flex-wrap: nowrap;
             height: 100%; 
-            will-change: transform; /* 性能优化 */
+            will-change: transform; 
         }
 
         .gallery-item {
@@ -178,9 +178,18 @@
         }
         .art-card:hover { transform: scale(1.02) translateY(-10px); box-shadow: 0 40px 80px rgba(166, 124, 82, 0.2); }
 
+        /* 视差容器 */
+        .art-card-inner {
+            width: 120%; 
+            height: 100%;
+            position: relative;
+            left: -10%; 
+            will-change: transform;
+        }
+
         .art-img {
             width: 100%; height: 100%; object-fit: cover;
-            transition: transform 0.8s ease; will-change: transform;
+            transition: transform 0.8s ease; 
         }
         .art-card:hover .art-img { transform: scale(1.08); }
 
@@ -235,7 +244,6 @@
             border-top: 1px solid rgba(255,255,255,0.6);
             display: flex; flex-direction: column;
             background: rgba(255,255,255,0.3);
-            /* 关键：限制高度以支持滚动 */
             max-height: 60%; 
         }
 
@@ -252,32 +260,29 @@
         }
         .modal-title { font-size: 30px; font-weight: 700; margin: 0 0 10px 0; letter-spacing: 1px; color: #1d1d1f; flex-shrink: 0; }
         
-        /* 元数据行 */
         .modal-meta-row {
             display: flex; align-items: center; gap: 10px;
             margin-bottom: 25px;
             letter-spacing: 0.5px;
-            color: #86868b; font-size: 14px; font-weight: 500; /* 字体大小统一 */
+            color: #86868b; font-size: 14px; font-weight: 500;
             flex-shrink: 0;
         }
         .modal-meta-divider { margin: 0 2px; opacity: 0.5; }
         .modal-views-text {
             display: flex; align-items: center; gap: 5px;
-            font-size: 14px; /* 强制统一大小 */
+            font-size: 14px;
         }
         .modal-views-text svg { width: 15px; height: 15px; fill: #86868b; }
 
-        /* 修复长文本滚动条 - 核心修复 */
         .modal-desc-scroll {
             font-size: 15px; line-height: 1.8; text-align: justify; color: #424245; 
             flex-grow: 1; 
             overflow-y: auto; 
             padding-right: 10px;
-            /* 关键：恢复触摸操作，否则手机上滚不动 */
+            /* 关键：允许弹窗内滚动 */
             touch-action: pan-y;
             overscroll-behavior: contain; 
             -webkit-overflow-scrolling: touch;
-            /* 允许用户选择文字 */
             user-select: text;
         }
         .modal-desc-scroll::-webkit-scrollbar { width: 5px; background: rgba(0,0,0,0.03); }
@@ -381,7 +386,7 @@
     </div>
 
     <script>
-        // === 1. 数据配置 (英文翻译已重写) ===
+        // === 1. 数据配置 ===
         const longTextZh = "<br><br>在这幅作品中，不仅展示了技法的高超，更融入了画家对于晨光与生命的深刻哲思。画面中每一笔都经过深思熟虑，墨色的浓淡变化极其丰富，仿佛在诉说着一个关于时间与永恒的故事。<br><br>观者在驻足凝视时，往往能感受到一种超越视觉的心灵震撼。画中的留白并非空无一物，而是充满了气的流动，是此时无声胜有声的最佳写照。晨光熹微，不仅是自然景象，更是心境的映照。";
         const longTextEn = "<br><br>This artwork is not merely a display of technique but a profound meditation on morning light and life. Every stroke is deliberate, with the nuanced variations of ink narrating a story of time and eternity.<br><br>As viewers gaze upon the piece, they often experience a spiritual resonance that transcends the visual. The negative space is far from empty; it pulses with the flow of Qi, perfectly embodying the silence that speaks louder than words. The first light of dawn reflects not just the natural world, but the inner landscape of the soul.";
 
@@ -488,9 +493,12 @@
             item.style.width = `${itemWidthVw}vw`;
             item.style.marginRight = `${itemMarginVw}vw`;
             
+            // 视差结构
             item.innerHTML = `
                 <div class="art-card" onclick="openModal(${index})">
-                    <img src="${art.src}" class="art-img" alt="Artwork" decoding="async">
+                    <div class="art-card-inner">
+                        <img src="${art.src}" class="art-img" alt="Artwork" decoding="async">
+                    </div>
                 </div>
                 <div class="art-preview-info">
                     <h2 class="art-preview-title">${art.title[currentLang]}</h2>
@@ -508,11 +516,11 @@
 
         preloadImages();
 
-        // === 5. Lenis & ScrollTrigger (参数调优) ===
+        // === 5. Lenis & ScrollTrigger ===
         gsap.registerPlugin(ScrollTrigger);
 
         const lenis = new Lenis({
-            duration: 1.0, // 稍微降低一点，更跟手
+            duration: 1.0, 
             easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
             direction: 'vertical', 
             smooth: true,
@@ -528,9 +536,27 @@
                 pin: true,
                 start: "top top",
                 end: () => `+=${wrapper.scrollWidth - window.innerWidth}`,
-                scrub: 0.1, // 更低的延迟，提高响应速度
+                scrub: 0.1, 
                 invalidateOnRefresh: true,
             }
+        });
+
+        // 视差动画
+        gsap.utils.toArray(".art-card-inner").forEach((inner, i) => {
+            gsap.fromTo(inner, 
+                { xPercent: -8 }, 
+                { 
+                    xPercent: 8, 
+                    ease: "none",
+                    scrollTrigger: {
+                        trigger: inner.closest(".gallery-item"),
+                        containerAnimation: scrollTween, 
+                        start: "left right", 
+                        end: "right left",   
+                        scrub: true
+                    }
+                }
+            );
         });
 
         gsap.to(".progress-bar", {
@@ -546,6 +572,7 @@
         // === 6. 核心逻辑：触控反转与无限循环 ===
         let isGalleryStarted = false;
         let isUserScrolling = false;
+        let isTouching = false; // 新增：严格的触摸状态锁
         let autoScrollSpeed = isMobile ? 1.0 : 1.8; 
         let scrollTimeout;
 
@@ -556,28 +583,30 @@
             } else {
                 clearTimeout(scrollTimeout);
                 scrollTimeout = setTimeout(() => {
-                    if(!document.body.classList.contains('modal-open')) {
+                    // 只有当手指不在屏幕上时，才允许执行吸附
+                    if(!document.body.classList.contains('modal-open') && !isTouching) {
                         performSnap();
                     }
                 }, 200); 
             }
         });
 
-        // == 移动端触控逻辑 (完美反转 & 阻止冒泡) ==
+        // == 移动端触控逻辑 (严格冲突解决) ==
         let touchStartX = 0;
         let touchStartY = 0;
         
         window.addEventListener('touchstart', (e) => {
             touchStartX = e.touches[0].clientX;
             touchStartY = e.touches[0].clientY;
-            if(isGalleryStarted) {
-                isUserScrolling = true;
-                clearTimeout(scrollTimeout);
-            }
+            
+            // 只要按下，立即锁定
+            isTouching = true;
+            isUserScrolling = true;
+            clearTimeout(scrollTimeout);
         }, {passive: false});
 
         window.addEventListener('touchmove', (e) => {
-            // 如果弹窗打开，且手指在文本区域内，则不执行画廊滑动
+            // 如果弹窗打开，放行（让 mDesc 处理），否则执行反转逻辑
             if(document.body.classList.contains('modal-open')) return;
             if(!isGalleryStarted) return;
 
@@ -590,9 +619,7 @@
             if(Math.abs(deltaX) > Math.abs(deltaY)) {
                 e.preventDefault(); 
                 
-                // 修复逻辑：手指左滑 (deltaX < 0) -> 内容向左滚动(看到右边的图) -> Scroll 增加
-                // 之前是减，现在改为加，符合“拖动纸张”的物理直觉：
-                // 手指向左滑，意味着我想看右边的内容，所以 Scroll 应该增加
+                // 修复逻辑：手指左滑 (deltaX < 0) -> 内容向左滚动 -> Scroll 增加
                 const sensitivity = 3.5;
                 lenis.scrollTo(lenis.scroll + (Math.abs(deltaX) * (deltaX > 0 ? -1 : 1) * sensitivity), { immediate: true });
                 
@@ -600,18 +627,47 @@
             }
         }, {passive: false});
 
+        window.addEventListener('touchend', () => {
+            isTouching = false; 
+            // 这里不立即设置 isUserScrolling=false，而是交给 lenis.on('scroll') 里的 timeout 处理
+            // 这样可以等待惯性滑动结束
+        });
+
+        // === 新增：键盘控制 ===
+        window.addEventListener('keydown', (e) => {
+            if(document.body.classList.contains('modal-open')) return;
+            if(!isGalleryStarted) return;
+
+            const step = window.innerWidth * 0.5; 
+
+            if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+                isUserScrolling = true;
+                lenis.scrollTo(lenis.scroll + step);
+            } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+                isUserScrolling = true;
+                lenis.scrollTo(lenis.scroll - step);
+            }
+            
+            clearTimeout(scrollTimeout);
+            scrollTimeout = setTimeout(() => {
+                isUserScrolling = false;
+            }, 500);
+        });
+
         // === 动画帧循环 ===
         function raf(time) {
             lenis.raf(time);
             
             // 无限循环逻辑
             if (lenis.scroll >= oneSetWidthPx) {
-                // 瞬移回起点，注意使用 immediate: true 消除动画
                 lenis.scrollTo(lenis.scroll % oneSetWidthPx, { immediate: true });
             }
 
-            // 自动播放
-            if (isGalleryStarted && !isUserScrolling && !document.body.classList.contains('modal-open')) {
+            // 自动播放：必须同时满足三个条件
+            // 1. 画廊已开始
+            // 2. 用户没有在操作 (isUserScrolling)
+            // 3. 手指没有在屏幕上 (isTouching) -- 修复冲突的关键
+            if (isGalleryStarted && !isUserScrolling && !isTouching && !document.body.classList.contains('modal-open')) {
                 lenis.scrollTo(lenis.scroll + autoScrollSpeed, { immediate: true });
             }
             requestAnimationFrame(raf);
@@ -694,7 +750,6 @@
             modal.classList.add('active');
             document.body.classList.add('modal-open');
             
-            // 确保弹窗打开时，底层画廊停止滚动
             lenis.stop();
             isUserScrolling = true;
 
@@ -722,7 +777,7 @@
             if(e.target === modal) closeModal();
         };
 
-        // 单独处理详情页滚动条的触摸事件，防止事件冒泡导致画廊滑动
+        // 单独处理详情页滚动条的触摸事件，防止事件冒泡
         mDesc.addEventListener('touchmove', (e) => {
             e.stopPropagation();
         }, { passive: false });
