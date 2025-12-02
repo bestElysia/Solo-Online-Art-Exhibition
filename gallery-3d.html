@@ -10,7 +10,7 @@
     <script src="https://cdn.jsdelivr.net/gh/studio-freight/lenis@1.0.29/bundled/lenis.min.js"></script>
 
     <style>
-        /* === 1. 基础设置与主题变量 === */
+        /* === 1. 基础设置 === */
         :root {
             --text-dark: #1d1d1f;       
             --text-light: #86868b;      
@@ -25,47 +25,27 @@
             -webkit-font-smoothing: antialiased;
             background: #fdfbfb;
             color: var(--text-dark);
+            
+            /* 核心：禁止任何原生滚动和回弹 */
             overscroll-behavior: none; 
-            /* 关键：允许垂直方向触摸(用于详情页滚动)，但禁止水平方向的默认行为 */
-            touch-action: pan-y; 
+            overflow: hidden; 
+            touch-action: none; 
+            
             user-select: none;
+            -webkit-user-select: none;
         }
 
         html.lenis, html.lenis body { height: auto; }
         ::-webkit-scrollbar { width: 0px; background: transparent; }
         * { -webkit-tap-highlight-color: transparent; outline: none; box-sizing: border-box; }
 
-        /* === 2. Loading 界面 === */
-        .loading-screen {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #fff;
-            z-index: 10000; 
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            transition: opacity 0.8s ease, visibility 0.8s;
-        }
-        .loading-screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
-
-        .loading-text {
-            font-size: 14px; color: var(--accent-gold); letter-spacing: 2px;
-            margin-bottom: 15px; font-weight: 500;
-        }
-        .loading-bar-bg {
-            width: 200px; height: 2px; background: rgba(0,0,0,0.05);
-            border-radius: 2px; overflow: hidden;
-        }
-        .loading-bar-fill {
-            width: 0%; height: 100%; background: var(--accent-gold);
-            transition: width 0.2s linear;
-        }
-
-        /* === 3. 晨光流体背景 === */
+        /* === 2. 晨光流体背景 === */
         .morning-bg {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             z-index: -1;
             background: linear-gradient(-45deg, #fffcf5, #fff5e6, #e6f0ff, #fffcf5);
             background-size: 400% 400%;
             animation: gradientFlow 20s ease infinite;
-            transition: opacity 2s ease;
         }
         .noise-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -78,7 +58,7 @@
             100% { background-position: 0% 50%; }
         }
 
-        /* === 4. 控制按钮 === */
+        /* === 3. 右上角控制区 === */
         .controls-area {
             position: fixed; top: 25px; right: 25px; z-index: 800;
             display: flex; gap: 15px; align-items: center;
@@ -88,72 +68,21 @@
             background: rgba(255, 255, 255, 0.4); 
             border: 1px solid #fff;
             display: flex; justify-content: center; align-items: center;
-            cursor: pointer; opacity: 0; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer; opacity: 1; transition: all 0.3s;
             backdrop-filter: blur(5px);
             font-size: 12px; font-weight: 600; color: var(--text-dark);
             box-shadow: 0 4px 10px rgba(0,0,0,0.03);
         }
-        body.started .control-btn { opacity: 1; transform: scale(1); }
         .control-btn:hover { background: #fff; transform: scale(1.1); box-shadow: 0 8px 20px rgba(0,0,0,0.08); }
         .music-btn svg { width: 18px; height: 18px; fill: var(--text-dark); }
         .music-btn.playing { background: #fff; box-shadow: 0 0 0 4px rgba(255,255,255,0.3); }
 
-        /* === 5. 开场 Intro === */
-        .intro-section {
-            height: 100vh; width: 100%;
-            display: flex; flex-direction: column;
-            justify-content: center; align-items: center;
-            text-align: center; 
-            z-index: 900; 
-            position: fixed; top:0; left:0;
-            background: rgba(255,252,248, 1);
-            transition: opacity 1.5s ease-in-out, visibility 1.5s;
-        }
-        
-        .intro-content {
-            transform: translateY(-5vh); 
-            opacity: 0; transition: opacity 1s ease;
-            display: flex; flex-direction: column; align-items: center;
-        }
-        .intro-content.visible { opacity: 1; }
-        .intro-section.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
-        
-        .intro-title { 
-            font-size: 10vw; font-weight: 700; letter-spacing: 8px; margin: 0; 
-            background: linear-gradient(45deg, #8b5e3c, #cfa858);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            filter: drop-shadow(0 10px 20px rgba(207, 168, 88, 0.15));
-        }
-        .intro-subtitle { font-size: 1.2rem; color: var(--text-light); margin-top: 20px; letter-spacing: 4px; font-weight: 400; }
-        
-        .scroll-to-enter-hint {
-            margin-top: 80px;
-            display: flex; flex-direction: column; align-items: center; gap: 10px;
-            color: var(--accent-gold); font-size: 12px; letter-spacing: 2px;
-            animation: pulseFade 2s infinite;
-        }
-        .scroll-icon {
-            width: 24px; height: 40px; border: 1.5px solid var(--accent-gold);
-            border-radius: 12px; position: relative;
-        }
-        .scroll-icon::after {
-            content: ''; position: absolute; top: 6px; left: 50%; transform: translateX(-50%);
-            width: 2px; height: 6px; background: var(--accent-gold); border-radius: 2px;
-            animation: scrollDown 1.5s infinite;
-        }
-
-        @keyframes pulseFade { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
-        @keyframes scrollDown { 0% { top: 6px; opacity: 1; } 100% { top: 20px; opacity: 0; } }
-
-        /* === 6. 画廊轨道 (视差) === */
+        /* === 4. 画廊轨道 (视差) === */
         .gallery-container {
             width: 100%; height: 100vh;
             overflow: hidden; display: flex; align-items: center;
-            opacity: 0; transform: scale(0.96); 
-            transition: opacity 2s ease, transform 2s cubic-bezier(0.22, 1, 0.36, 1); 
             position: relative; z-index: 10; 
         }
-        body.started .gallery-container { opacity: 1; transform: scale(1); }
 
         .gallery-wrapper {
             display: flex; align-items: center; flex-wrap: nowrap;
@@ -175,8 +104,7 @@
             transform: translateZ(0); 
             border-radius: 2px;
         }
-        /* 移除卡片悬停位移，防止与自动播放产生视觉干扰 */
-        .art-card:hover { box-shadow: 0 40px 80px rgba(166, 124, 82, 0.2); }
+        .art-card:hover { transform: scale(1.02) translateY(-10px); box-shadow: 0 40px 80px rgba(166, 124, 82, 0.2); }
 
         /* 视差容器 */
         .art-card-inner {
@@ -200,7 +128,7 @@
         .art-preview-title { font-size: 22px; font-weight: 600; margin: 0 0 6px 0; letter-spacing: 1px; color: var(--text-dark); }
         .art-preview-meta { font-size: 13px; color: var(--text-light); letter-spacing: 0.5px; font-weight: 400;}
         
-        /* === 7. 液态玻璃弹窗 === */
+        /* === 5. 液态玻璃弹窗 === */
         .modal {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(255, 255, 255, 0.2); 
@@ -279,7 +207,7 @@
             flex-grow: 1; 
             overflow-y: auto; 
             padding-right: 10px;
-            /* 允许详情内滚动，其他区域触摸无效 */
+            /* 关键：允许弹窗内滚动，覆盖全局禁止 */
             touch-action: pan-y;
             overscroll-behavior: contain; 
             -webkit-overflow-scrolling: touch;
@@ -306,7 +234,6 @@
         }
         
         @media (max-width: 768px) {
-            .intro-title { font-size: 12vw; }
             .art-card { height: 50vh; }
             .modal-content-box { width: 95vw; height: 92vh; border-radius: 16px; flex-direction: column;}
             .modal-img-wrapper { height: 40%; padding: 20px; }
@@ -315,18 +242,10 @@
             .modal-title { font-size: 24px; margin-bottom: 5px;}
             .modal-desc-scroll { font-size: 15px; margin-top: 10px;} 
             .controls-area { top: 20px; right: 20px; gap: 10px; }
-            .scroll-to-enter-hint { margin-top: 50px; }
         }
     </style>
 </head>
 <body>
-
-    <div class="loading-screen" id="loading-screen">
-        <div class="loading-text">LOADING <span id="loading-percent">0%</span></div>
-        <div class="loading-bar-bg">
-            <div class="loading-bar-fill" id="loading-fill"></div>
-        </div>
-    </div>
 
     <div class="morning-bg"></div>
     <div class="noise-overlay"></div>
@@ -369,17 +288,6 @@
         </div>
     </div>
 
-    <section class="intro-section" id="intro">
-        <div class="intro-content" id="intro-content">
-            <h1 class="intro-title">YANXU</h1>
-            <p class="intro-subtitle" id="ui-subtitle">CHINESE PAINTING · 晨光画境</p>
-            <div class="scroll-to-enter-hint">
-                <div class="scroll-icon"></div>
-                <span id="scroll-hint-text">SCROLL TO ENTER</span>
-            </div>
-        </div>
-    </section>
-
     <div class="gallery-container">
         <div class="gallery-wrapper" id="gallery-wrapper">
         </div>
@@ -391,8 +299,8 @@
         const longTextEn = "<br><br>This artwork is not merely a display of technique but a profound meditation on morning light and life. Every stroke is deliberate, with the nuanced variations of ink narrating a story of time and eternity.<br><br>As viewers gaze upon the piece, they often experience a spiritual resonance that transcends the visual. The negative space is far from empty; it pulses with the flow of Qi, perfectly embodying the silence that speaks louder than words. The first light of dawn reflects not just the natural world, but the inner landscape of the soul.";
 
         const uiText = {
-            zh: { subtitle: "CHINESE PAINTING · 晨光画境", scrollHint: "滑动进入画境", langBtn: "EN" },
-            en: { subtitle: "CHINESE PAINTING · Art of Morning Light", scrollHint: "SCROLL TO ENTER", langBtn: "中" }
+            zh: { langBtn: "EN" },
+            en: { langBtn: "中" }
         };
 
         const originalArtworks = [
@@ -419,8 +327,6 @@
         // === 2. 语言切换逻辑 ===
         function updateUIText() {
             const t = uiText[currentLang];
-            document.getElementById('ui-subtitle').innerText = t.subtitle;
-            document.getElementById('scroll-hint-text').innerText = t.scrollHint;
             document.getElementById('lang-btn').innerText = t.langBtn;
 
             document.querySelectorAll('.art-preview-title').forEach((el, index) => {
@@ -439,43 +345,7 @@
             updateUIText();
         }
 
-        // === 3. 预加载逻辑 ===
-        function preloadImages() {
-            const loadingScreen = document.getElementById('loading-screen');
-            const percentEl = document.getElementById('loading-percent');
-            const fillEl = document.getElementById('loading-fill');
-            const introContent = document.getElementById('intro-content');
-
-            const imagesToLoad = [...new Set(originalArtworks.map(a => a.src))];
-            let loadedCount = 0;
-            const total = imagesToLoad.length;
-
-            if(total === 0) {
-                finishLoading();
-                return;
-            }
-
-            imagesToLoad.forEach(src => {
-                const img = new Image();
-                img.onload = () => { loadedCount++; updateProgress(); };
-                img.onerror = () => { loadedCount++; updateProgress(); };
-                img.src = src;
-            });
-
-            function updateProgress() {
-                const percent = Math.round((loadedCount / total) * 100);
-                percentEl.innerText = percent + "%";
-                fillEl.style.width = percent + "%";
-                if(loadedCount >= total) setTimeout(finishLoading, 500);
-            }
-
-            function finishLoading() {
-                loadingScreen.classList.add('hidden');
-                introContent.classList.add('visible'); 
-            }
-        }
-
-        // === 4. DOM 生成 ===
+        // === 3. DOM 生成 ===
         const wrapper = document.getElementById('gallery-wrapper');
         const isMobile = window.innerWidth < 768;
         
@@ -486,7 +356,6 @@
         
         wrapper.style.paddingLeft = `${paddingLeftVw}vw`;
 
-        // 生成画廊卡片
         displayArtworks.forEach((art, index) => {
             const item = document.createElement('div');
             item.className = 'gallery-item';
@@ -510,13 +379,9 @@
 
         const totalVw = paddingLeftVw + (displayArtworks.length * singleItemTotalVw);
         wrapper.style.width = `${totalVw}vw`;
-        
-        // 计算无限循环的节点宽度
         const oneSetWidthPx = (totalItemsCount * singleItemTotalVw) * (window.innerWidth / 100);
 
-        preloadImages();
-
-        // === 5. Lenis & ScrollTrigger ===
+        // === 4. Lenis & ScrollTrigger (纯自动播放配置) ===
         gsap.registerPlugin(ScrollTrigger);
 
         const lenis = new Lenis({
@@ -524,8 +389,8 @@
             easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
             direction: 'vertical', 
             smooth: true,
-            smoothTouch: true,
-            touchMultiplier: 2.5 
+            smoothTouch: false, // 禁用触摸滚动驱动
+            touchMultiplier: 0
         });
 
         const scrollTween = gsap.to(wrapper, {
@@ -569,53 +434,9 @@
             }
         });
 
-        // === 6. 核心逻辑：自动循环与控制 ===
-        let isGalleryStarted = false;
-        let isUserScrolling = false;
+        // === 5. 纯自动播放逻辑 ===
         let autoScrollSpeed = isMobile ? 1.0 : 1.8; 
-        let scrollTimeout;
 
-        // 监听滚动以触发“进入画境”
-        lenis.on('scroll', (e) => {
-            if (!isGalleryStarted) {
-                // 向下滑动超过阈值启动
-                if (e.animatedScroll > 50) startGallery();
-            } else {
-                // 检测是否在手动滚动（PC滚轮或移动端垂直滑动）
-                // 只要 scroll 事件触发，且速度不为 0 (近似)，就认为是用户在交互
-                // 但要排除自动播放引起的 scroll
-                // 这里简化处理：只要有 scroll 事件，重置倒计时
-                clearTimeout(scrollTimeout);
-                scrollTimeout = setTimeout(() => {
-                    if(!document.body.classList.contains('modal-open')) {
-                        performSnap();
-                    }
-                }, 200); 
-            }
-        });
-
-        // === 键盘控制 ===
-        window.addEventListener('keydown', (e) => {
-            if(document.body.classList.contains('modal-open')) return;
-            if(!isGalleryStarted) return;
-
-            const step = window.innerWidth * 0.5; 
-
-            if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
-                isUserScrolling = true;
-                lenis.scrollTo(lenis.scroll + step);
-            } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-                isUserScrolling = true;
-                lenis.scrollTo(lenis.scroll - step);
-            }
-            
-            clearTimeout(scrollTimeout);
-            scrollTimeout = setTimeout(() => {
-                isUserScrolling = false;
-            }, 500);
-        });
-
-        // === 动画帧循环 ===
         function raf(time) {
             lenis.raf(time);
             
@@ -624,54 +445,32 @@
                 lenis.scrollTo(lenis.scroll % oneSetWidthPx, { immediate: true });
             }
 
-            // 自动播放条件：画廊已启动，用户未操作，未打开弹窗
-            if (isGalleryStarted && !isUserScrolling && !document.body.classList.contains('modal-open')) {
+            // 只要没打开弹窗，就一直自动播放
+            if (!document.body.classList.contains('modal-open')) {
                 lenis.scrollTo(lenis.scroll + autoScrollSpeed, { immediate: true });
             }
             requestAnimationFrame(raf);
         }
         requestAnimationFrame(raf);
 
-        // 鼠标滚轮介入时暂停自动播放
-        ['pointerdown', 'wheel'].forEach(evt => {
-            window.addEventListener(evt, () => {
-                if(isGalleryStarted) {
-                    isUserScrolling = true;
-                    clearTimeout(scrollTimeout);
-                }
-            }, {passive: true});
-        });
+        // 彻底禁止滚轮控制画廊
+        window.addEventListener('wheel', (e) => {
+            if(!document.body.classList.contains('modal-open')) {
+                e.preventDefault();
+            }
+        }, { passive: false });
 
-        function performSnap() {
-            if (!isGalleryStarted) return;
-            const itemPx = (singleItemTotalVw * window.innerWidth) / 100;
-            const currentScroll = lenis.scroll;
-            
-            let targetIndex = Math.round(currentScroll / itemPx);
-            let targetScroll = targetIndex * itemPx;
+        // 彻底禁止触摸拖动画廊
+        window.addEventListener('touchmove', (e) => {
+            if(!document.body.classList.contains('modal-open')) {
+                e.preventDefault();
+            }
+        }, { passive: false });
 
-            lenis.scrollTo(targetScroll, { 
-                duration: 1.0, 
-                easing: (t) => 1 - Math.pow(1 - t, 3), 
-                onComplete: () => { isUserScrolling = false; }
-            });
-        }
 
-        // === 7. 交互逻辑 ===
+        // === 6. 音乐控制 ===
         const bgMusic = document.getElementById('bg-music');
-        const introSection = document.getElementById('intro');
         const musicBtn = document.getElementById('music-toggle');
-
-        function startGallery() {
-            if(isGalleryStarted) return;
-            isGalleryStarted = true;
-            document.body.classList.add('started');
-            
-            introSection.classList.add('hidden');
-            
-            ScrollTrigger.refresh();
-            isUserScrolling = false;
-        }
 
         function toggleMusic() {
             if (bgMusic.paused) {
@@ -685,7 +484,7 @@
             }
         }
 
-        // === 8. 弹窗与 GSAP 动画 ===
+        // === 7. 弹窗逻辑 ===
         const modal = document.getElementById('detail-modal');
         const mImg = document.getElementById('modal-img');
         const mTitle = document.getElementById('m-title');
@@ -709,8 +508,8 @@
             modal.classList.add('active');
             document.body.classList.add('modal-open');
             
+            // 弹窗打开，停止 Lenis 更新 (暂停背景)
             lenis.stop();
-            isUserScrolling = true;
 
             const box = modal.querySelector('.modal-content-box');
             gsap.fromTo(box, 
@@ -726,8 +525,8 @@
                 onComplete: () => {
                     modal.classList.remove('active');
                     document.body.classList.remove('modal-open');
+                    // 弹窗关闭，恢复 Lenis 更新 (继续播放)
                     lenis.start();
-                    setTimeout(() => { if(isGalleryStarted) isUserScrolling = false; }, 500);
                 }
             });
         }
@@ -736,8 +535,12 @@
             if(e.target === modal) closeModal();
         };
 
-        // 单独处理详情页滚动条的触摸事件，防止事件冒泡
+        // 详情页单独允许触摸滚动，不被全局禁止拦截
         mDesc.addEventListener('touchmove', (e) => {
+            e.stopPropagation();
+        }, { passive: false });
+        
+        mDesc.addEventListener('wheel', (e) => {
             e.stopPropagation();
         }, { passive: false });
 
