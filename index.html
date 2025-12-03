@@ -74,6 +74,23 @@
             height: 24px;
         }
 
+
+        /* === 3. 音乐控制区定位修正 === */
+        .controls-area {
+            position: fixed;
+            top: 25px;       /* 【关键修复】必须与 hamburger.css 中的 top: 25px 保持一致 */
+            right: 25px;     /* 与左侧汉堡菜单对称，放在右侧 */
+            z-index: 900;    /* 层级与 hamburger 保持一致 */
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* 确保按钮本身没有额外的 margin 导致错位 */
+        .control-btn {
+            margin: 0 !important; 
+        }
+
         /* === 4. Hero Banner === */
         .hero-section {
             position: relative;
