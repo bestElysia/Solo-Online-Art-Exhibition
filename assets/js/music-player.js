@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         {
             title: "Majo no Tabitabi Literature",
+            artist: "yanxu player",  // 【修改点】统一歌手名
             src: "assets/music/Majo no Tabitabi OPLiterature Piano Cover.mp3",
             cover: "assets/music/Majo no Tabitabi.jpg"
         }
@@ -23,6 +24,29 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // === 2. 核心功能函数 ===
 
+    // 更新系统锁屏中心的媒体信息 (显示封面和歌手)
+    function updateMediaSession() {
+        if ('mediaSession' in navigator) {
+            const track = playlist[currentTrackIndex];
+            
+            // 1. 设置元数据 (封面、标题、歌手)
+            navigator.mediaSession.metadata = new MediaMetadata({
+                title: track.title,
+                artist: track.artist, // 这里会自动读取 "yanxu player"
+                album: "晨光画境", 
+                artwork: [
+                    { src: track.cover, sizes: '512x512', type: 'image/jpeg' }
+                ]
+            });
+
+            // 2. 绑定锁屏控制事件
+            navigator.mediaSession.setActionHandler('play', () => playMusic());
+            navigator.mediaSession.setActionHandler('pause', () => pauseMusic());
+            navigator.mediaSession.setActionHandler('nexttrack', () => playNext());
+            navigator.mediaSession.setActionHandler('previoustrack', () => playNext());
+        }
+    }
+
     // 切换播放/暂停
     function toggleMusic() {
         if (audio.paused) {
@@ -34,13 +58,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 播放逻辑
     function playMusic() {
-        // play() 返回一个 Promise，处理自动播放策略限制
         const playPromise = audio.play();
 
         if (playPromise !== undefined) {
             playPromise.then(() => {
                 isPlaying = true;
                 updateUI(true);
+                // 播放成功后更新锁屏信息
+                updateMediaSession();
             }).catch(error => {
                 console.log("自动播放被阻止，等待用户交互:", error);
                 isPlaying = false;
@@ -59,25 +84,29 @@ document.addEventListener('DOMContentLoaded', () => {
     // 切换到下一首
     function playNext() {
         currentTrackIndex++;
-        // 如果是最后一首，回到第一首 (循环播放)
+        // 循环播放
         if (currentTrackIndex >= playlist.length) {
             currentTrackIndex = 0;
         }
         
-        // 切换源并播放
+        // 切换源
         audio.src = playlist[currentTrackIndex].src;
+        
+        // 播放 (会触发 updateMediaSession)
         playMusic();
         console.log("Now Playing:", playlist[currentTrackIndex].title);
     }
 
     // 更新 UI 状态
     function updateUI(playing) {
-        if (playing) {
-            musicBtn.classList.remove('muted');
-            musicBtn.classList.add('playing');
-        } else {
-            musicBtn.classList.add('muted');
-            musicBtn.classList.remove('playing');
+        if (musicBtn) {
+            if (playing) {
+                musicBtn.classList.remove('muted');
+                musicBtn.classList.add('playing');
+            } else {
+                musicBtn.classList.add('muted');
+                musicBtn.classList.remove('playing');
+            }
         }
     }
 
@@ -96,7 +125,7 @@ document.addEventListener('DOMContentLoaded', () => {
         playNext();
     });
 
-    // (可选) 暴露给全局，方便调试
+    // 暴露给全局
     window.musicPlayer = {
         play: playMusic,
         pause: pauseMusic,
