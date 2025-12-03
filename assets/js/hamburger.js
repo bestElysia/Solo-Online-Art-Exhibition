@@ -160,3 +160,90 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+
+
+/* =========================================
+   4. UI 自动隐藏逻辑 (下滑隐藏 / 上滑显示 / 静止5s隐藏)
+   ========================================= */
+document.addEventListener('DOMContentLoaded', () => {
+    // 获取需要隐藏的元素：汉堡菜单 和 音乐控制区
+    const uiElements = document.querySelectorAll('.hamburger, .controls-area');
+    const hamburger = document.getElementById('hamburger');
+
+    // 安全检查：如果页面上没有这些元素，就不执行，防止报错
+    if (!hamburger || uiElements.length === 0) return;
+
+    let lastScrollY = window.scrollY;
+    let idleTimer = null;
+    let isHidden = false;
+
+    // --- 显示 UI ---
+    function showUI() {
+        if (!isHidden) return;
+        uiElements.forEach(el => el.classList.remove('ui-hidden'));
+        isHidden = false;
+    }
+
+    // --- 隐藏 UI ---
+    function hideUI() {
+        // 重要守卫：如果侧边菜单正在打开，绝对不要隐藏按钮！
+        if (hamburger.classList.contains('active')) return;
+        
+        if (isHidden) return;
+        uiElements.forEach(el => el.classList.add('ui-hidden'));
+        isHidden = true;
+    }
+
+    // --- 重置静止倒计时 ---
+    function resetIdleTimer() {
+        if (idleTimer) clearTimeout(idleTimer);
+        
+        // 设置 5000 毫秒 (5秒) 后执行隐藏
+        idleTimer = setTimeout(() => {
+            // 只有当页面不在顶部 (滚动超过 50px) 时才自动隐藏
+            // 这样用户刚进页面时，导航栏会一直保留，直到他们开始浏览
+            if (window.scrollY > 50) {
+                hideUI();
+            }
+        }, 5000); 
+    }
+
+    // --- 监听滚动事件 ---
+    window.addEventListener('scroll', () => {
+        const currentScrollY = window.scrollY;
+
+        // 1. 防止 iOS 橡皮筋效果产生负数 scrollY
+        if (currentScrollY < 0) return;
+
+        // 2. 判断方向
+        if (currentScrollY > lastScrollY && currentScrollY > 50) {
+            // 向下滚动 -> 隐藏
+            hideUI();
+        } else if (currentScrollY < lastScrollY) {
+            // 向上滚动 -> 显示
+            showUI();
+        }
+
+        // 3. 更新位置并重置倒计时
+        lastScrollY = currentScrollY;
+        resetIdleTimer();
+    }, { passive: true });
+
+    // --- 监听鼠标移动 ---
+    // 电脑端体验优化：只要鼠标动了，就显示 UI 并重置倒计时
+    window.addEventListener('mousemove', () => {
+        showUI();
+        resetIdleTimer();
+    });
+    
+    // --- 触摸开始 ---
+    // 移动端体验优化：手指碰到屏幕时显示 UI
+    window.addEventListener('touchstart', () => {
+        showUI();
+        resetIdleTimer();
+    }, { passive: true });
+
+    // 初始化启动一次计时器
+    resetIdleTimer();
+});
+
