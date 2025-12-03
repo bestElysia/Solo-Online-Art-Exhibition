@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>After the Rain | Exhibition View</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/studio-freight/lenis@1.0.29/bundled/lenis.min.js"></script>
+
+    <link rel="stylesheet" href="../assets/css/hamburger.css">
+    
+    <style>
+        /* === 继承基础设置 (保持风格一致) === */
+        :root {
+            --text-dark: #1d1d1f;       
+            --text-light: #86868b;      
+            --accent-gold: #cfa858;     
+            --bg-color: #fdfbfb;
+        }
+
+        html, body {
+            margin: 0; padding: 0; width: 100%; 
+            font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+            background: var(--bg-color); color: var(--text-dark);
+            overflow-x: hidden;
+        }
+
+        /* 背景 */
+        .morning-bg {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
+            background: linear-gradient(-45deg, #fffcf5, #fff5e6, #e6f0ff, #fffcf5);
+            background-size: 400% 400%; animation: gradientFlow 20s ease infinite;
+        }
+        .noise-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; opacity: 0.3; pointer-events: none;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='1'/%3E%3C/svg%3E");
+        }
+        @keyframes gradientFlow { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+
+        /* === 详情页特有样式 === */
+
+        /* 顶部导航栏 */
+        .top-nav {
+            position: fixed; top: 0; left: 0; width: 100%; padding: 30px 5vw;
+            display: flex; justify-content: space-between; align-items: center;
+            z-index: 100; mix-blend-mode: difference; color: #fff;
+        }
+        .back-link {
+            text-decoration: none; text-transform: uppercase; font-size: 12px; letter-spacing: 2px;
+            display: flex; align-items: center; gap: 10px; color: var(--text-dark); mix-blend-mode: normal;
+        }
+        .back-icon { width: 20px; height: 10px; fill: var(--text-dark); transition: transform 0.3s; }
+        .back-link:hover .back-icon { transform: translateX(-5px); }
+
+        /* Hero 区域 */
+        .detail-hero {
+            height: 90vh; width: 100%; position: relative;
+            display: flex; flex-direction: column; justify-content: flex-end;
+            padding: 0 5vw 80px; box-sizing: border-box;
+        }
+        .hero-bg-img {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            object-fit: cover; z-index: -1; filter: grayscale(20%) contrast(95%);
+            /* 渐变遮罩，保证文字清晰 */
+            mask-image: linear-gradient(to bottom, black 70%, transparent 100%);
+            -webkit-mask-image: linear-gradient(to bottom, black 70%, transparent 100%);
+        }
+        
+        .hero-meta { color: var(--accent-gold); font-size: 14px; font-weight: 700; letter-spacing: 2px; margin-bottom: 20px; text-transform: uppercase; }
+        .hero-title { font-size: 8vw; line-height: 0.9; font-weight: 800; margin: 0; color: var(--text-dark); mix-blend-mode: multiply;}
+        .hero-location { font-size: 14px; letter-spacing: 1px; color: var(--text-light); margin-top: 30px; display: flex; align-items: center; gap: 8px; }
+
+        /* 内容容器 */
+        .content-container { max-width: 1100px; margin: 0 auto; padding: 100px 5vw; }
+
+        /* 策展语 */
+        .curatorial-text {
+            font-size: 18px; line-height: 2; font-weight: 300; color: #444;
+            margin-bottom: 100px; text-align: justify;
+            columns: 2; column-gap: 60px;
+        }
+
+        /* 章节标题 */
+        .section-header {
+            text-align: center; margin: 80px 0 60px; position: relative;
+        }
+        .section-header span {
+            background: var(--bg-color); padding: 0 20px; position: relative; z-index: 1;
+            font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-light);
+        }
+        .section-header::after {
+            content: ''; position: absolute; top: 50%; left: 0; width: 100%; height: 1px; background: rgba(0,0,0,0.05); z-index: 0;
+        }
+        
+        /* 画廊网格 */
+        .gallery-grid {
+            display: grid; grid-template-columns: repeat(12, 1fr); gap: 30px; /* 间距加大一点 */
+            margin-bottom: 150px;
+        }
+        .g-item { position: relative; overflow: hidden; border-radius: 2px; }
+        .g-item img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.7s ease; display: block; }
+        .g-item:hover img { transform: scale(1.03); }
+        
+        /* 布局类 */
+        .w-full { grid-column: span 12; height: 75vh; }
+        .w-half { grid-column: span 6; height: 500px; }
+        .w-third { grid-column: span 4; height: 400px; }
+        .w-two-thirds { grid-column: span 8; height: 500px; }
+
+        /* 图片说明 */
+        .caption {
+            font-size: 12px; color: var(--text-light); margin-top: 12px; display: block;
+            font-family: 'Courier New', serif; letter-spacing: 0.5px;
+        }
+        .caption span { color: var(--text-dark); font-weight: 600; margin-right: 5px; }
+
+        /* 底部导航 */
+        .next-project {
+            border-top: 1px solid rgba(0,0,0,0.1); padding: 80px 0; text-align: center;
+            display: block; text-decoration: none; color: var(--text-dark);
+            transition: background 0.3s;
+        }
+        .np-label { font-size: 12px; color: var(--text-light); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px; }
+        .np-title { font-size: 40px; font-weight: 600; }
+        .next-project:hover .np-title { opacity: 0.6; }
+
+        @media (max-width: 768px) {
+            .hero-title { font-size: 14vw; }
+            .curatorial-text { columns: 1; font-size: 16px; }
+            .gallery-grid { display: flex; flex-direction: column; gap: 40px; }
+            .w-full, .w-half, .w-third, .w-two-thirds { width: 100%; height: auto; aspect-ratio: 4/3; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="morning-bg"></div>
+    <div class="noise-overlay"></div>
+
+    <div id="hamburger" class="hamburger">
+        <div class="line"></div>
+        <div class="line"></div>
+        <div class="line"></div>
+    </div>
+
+    <nav id="sideNav" class="side-nav">
+        <ul class="nav-list">
+            <li><a href="../index.html" class="nav-item">主页</a></li>
+            <li><a href="../exhibitions.html" class="nav-item active">画展</a></li>
+            <li><a href="../papers.html" class="nav-item">论文</a></li>
+            <li><a href="../essays.html" class="nav-item">随笔日记</a></li>
+        </ul>
+    </nav>
+
+    <div class="top-nav">
+        <a href="../exhibitions.html" class="back-link">
+            <svg class="back-icon" viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+            BACK TO LIST
+        </a>
+    </div>
+
+    <main>
+        <header class="detail-hero">
+            <img src="../assets/images/gallery/eg7.jpg" class="hero-bg-img" alt="Exhibition View">
+            
+            <div class="hero-content">
+                <div class="hero-meta">March 15 - April 30, 2023</div>
+                <h1 class="hero-title">AFTER THE<br>RAIN.</h1>
+                <div class="hero-location">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="#86868b"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                    West Lake Museum, Hangzhou
+                </div>
+            </div>
+        </header>
+
+        <div class="content-container">
+            
+            <div class="curatorial-text fade-up">
+                <p>
+                    “雨后初晴”是一场关于感知与气氛的实验。在本次展览中，严旭试图通过水墨的晕染特性，捕捉江南气候中特有的湿润感。这不仅仅是对风景的描绘，更是对空气、湿度以及时间流逝的物理性表达。
+                </p>
+                <p>
+                    展览空间被设计成一个半透明的迷宫，丝绸与宣纸交错悬挂。观众在其中穿行，仿佛置身于雨后的山林之中。墨色的深浅变化模拟了云雾的消散过程，旨在探讨传统水墨在当代装置艺术语境下的可能性，以及如何用古老的媒介回应现代人对“静谧”的渴望。
+                </p>
+            </div>
+
+            <div class="section-header fade-up">
+                <span>SELECTED WORKS</span>
+            </div>
+
+            <div class="gallery-grid">
+                
+                <div class="g-item w-full fade-up">
+                    <img src="../assets/images/gallery/eg1.jpg" alt="Work 1">
+                    <span class="caption"><span>01.</span> Mountain Breeze / 山间清风 (180x90cm)</span>
+                </div>
+
+                <div class="g-item w-half fade-up">
+                    <img src="../assets/images/gallery/eg2.jpg" alt="Work 2">
+                    <span class="caption"><span>02.</span> Mist Study I / 迷雾研究一</span>
+                </div>
+                <div class="g-item w-half fade-up">
+                    <img src="../assets/images/gallery/eg3.jpg" alt="Work 3">
+                    <span class="caption"><span>03.</span> Mist Study II / 迷雾研究二</span>
+                </div>
+
+                <div class="g-item w-third fade-up">
+                    <img src="../assets/images/gallery/eg4.jpg" alt="Work 4">
+                    <span class="caption"><span>04.</span> Trace No.1</span>
+                </div>
+                <div class="g-item w-third fade-up">
+                    <img src="../assets/images/gallery/eg5.jpg" alt="Work 5">
+                    <span class="caption"><span>05.</span> Trace No.2</span>
+                </div>
+                <div class="g-item w-third fade-up">
+                    <img src="../assets/images/gallery/eg6.jpg" alt="Work 6">
+                    <span class="caption"><span>06.</span> Trace No.3</span>
+                </div>
+
+                <div class="g-item w-two-thirds fade-up">
+                    <img src="../assets/images/gallery/eg7.jpg" alt="Work 7">
+                    <span class="caption"><span>07.</span> Silent Valley / 寂静谷 (Featured)</span>
+                </div>
+                <div class="g-item w-third fade-up">
+                    <img src="../assets/images/gallery/eg1.jpg" alt="Work 8">
+                    <span class="caption"><span>08.</span> Detail View</span>
+                </div>
+
+                <div class="g-item w-full fade-up">
+                    <img src="../assets/images/gallery/eg2.jpg" alt="Work 9">
+                    <span class="caption"><span>09.</span> After The Rain / 雨后 (Installation View)</span>
+                </div>
+
+                <div class="g-item w-third fade-up">
+                    <img src="../assets/images/gallery/eg3.jpg" alt="Work 10">
+                    <span class="caption"><span>10.</span> Stone / 石</span>
+                </div>
+                <div class="g-item w-third fade-up">
+                    <img src="../assets/images/gallery/eg4.jpg" alt="Work 11">
+                    <span class="caption"><span>11.</span> Water / 水</span>
+                </div>
+                <div class="g-item w-third fade-up">
+                    <img src="../assets/images/gallery/eg5.jpg" alt="Work 12">
+                    <span class="caption"><span>12.</span> Wood / 木</span>
+                </div>
+
+            </div>
+        </div>
+
+        <a href="#" class="next-project">
+            <div class="np-label">Next Exhibition</div>
+            <div class="np-title">静谧的声音 (2022)</div>
+        </a>
+
+    </main>
+
+    <footer style="text-align: center; padding: 50px; color: var(--text-light); font-size: 11px; letter-spacing: 1px;">
+        &copy; 2025 YANXU.US
+    </footer>
+
+    <script src="../assets/js/hamburger.js"></script>
+    <script>
+        // === 1. Lenis 平滑滚动 ===
+        const lenis = new Lenis({
+            duration: 1.2,
+            easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+            direction: 'vertical', smooth: true,
+        });
+        function raf(time) { lenis.raf(time); requestAnimationFrame(raf); }
+        requestAnimationFrame(raf);
+
+        // === 2. 页面入场动画 ===
+        gsap.from(".hero-title", { 
+            y: 100, opacity: 0, duration: 1.5, ease: "power4.out", delay: 0.2 
+        });
+        gsap.from(".hero-meta, .hero-location", { 
+            y: 20, opacity: 0, duration: 1, ease: "power2.out", delay: 0.8 
+        });
+
+        // === 3. 滚动触发元素显现 ===
+        gsap.registerPlugin(ScrollTrigger);
+
+        document.querySelectorAll('.fade-up').forEach(item => {
+            gsap.from(item, {
+                scrollTrigger: {
+                    trigger: item,
+                    start: "top 85%",
+                    toggleActions: "play none none reverse"
+                },
+                y: 60, opacity: 0, duration: 1.2, ease: "power3.out"
+            });
+        });
+
+        // Hero背景图视差
+        gsap.to(".hero-bg-img", {
+            yPercent: 30,
+            ease: "none",
+            scrollTrigger: {
+                trigger: ".detail-hero",
+                start: "top top",
+                end: "bottom top",
+                scrub: true
+            }
+        });
+    </script>
+</body>
+</html>
