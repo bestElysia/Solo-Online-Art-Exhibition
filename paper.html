@@ -1,1 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Yanxu | 论文集</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/studio-freight/lenis@1.0.29/bundled/lenis.min.js"></script>
+    <link rel="stylesheet" href="assets/css/hamburger.css">
+
+    <style>
+        :root {
+            --text-dark: #1d1d1f;       
+            --text-light: #86868b;      
+            --accent-gold: #cfa858;     
+            --bg-color: #fdfbfb;
+            --serif-font: "Songti SC", "Noto Serif SC", "SimSun", serif;
+        }
+
+        html, body {
+            margin: 0; padding: 0; width: 100%; 
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-color); color: var(--text-dark);
+            -webkit-font-smoothing: antialiased;
+        }
+        
+        /* 动态背景 */
+        .morning-bg {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
+            background: linear-gradient(-45deg, #fffcf5, #fff5e6, #e6f0ff, #fffcf5);
+            background-size: 400% 400%; animation: gradientFlow 20s ease infinite;
+        }
+        .noise-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
+            opacity: 0.3; pointer-events: none;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='1'/%3E%3C/svg%3E");
+        }
+        @keyframes gradientFlow { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+
+        /* 页面布局 */
+        .container { max-width: 1000px; margin: 0 auto; padding: 120px 30px 60px; }
+        
+        .header-group { margin-bottom: 80px; text-align: center; }
+        .page-subtitle { font-size: 12px; letter-spacing: 3px; color: var(--text-light); text-transform: uppercase; margin-bottom: 10px; }
+        .page-title { font-size: 32px; font-weight: 700; font-family: var(--serif-font); }
+
+        /* 论文列表样式 */
+        .paper-list { display: flex; flex-direction: column; gap: 40px; }
+
+        .paper-item {
+            display: block; /* 让整个块可点击 */
+            text-decoration: none;
+            position: relative;
+            padding: 30px 0;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            transition: all 0.4s ease;
+            cursor: pointer;
+        }
+
+        /* 悬停效果 */
+        .paper-item:hover { transform: translateX(10px); }
+        .paper-item:hover .item-title { color: var(--accent-gold); }
+        .paper-item::before {
+            content: ''; position: absolute; left: -20px; top: 50%; 
+            width: 0; height: 1px; background: var(--accent-gold);
+            transition: width 0.3s ease;
+        }
+        .paper-item:hover::before { width: 15px; }
+
+        .item-meta {
+            display: flex; gap: 15px; font-size: 13px; color: var(--text-light);
+            margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px;
+        }
+        .item-title {
+            font-size: 24px; font-weight: 600; color: var(--text-dark);
+            font-family: var(--serif-font); margin-bottom: 15px;
+            transition: color 0.3s ease;
+        }
+        .item-excerpt {
+            font-size: 15px; color: #666; line-height: 1.6;
+            max-width: 800px;
+            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; /* 限制显示2行 */
+        }
+        
+        .arrow-icon {
+            position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+            opacity: 0; transition: all 0.3s ease;
+        }
+        .paper-item:hover .arrow-icon { opacity: 1; right: 0; }
+
+        /* 移动端适配 */
+        @media (max-width: 768px) {
+            .item-title { font-size: 20px; }
+            .arrow-icon { display: none; } /* 移动端不显示箭头 */
+        }
+    </style>
+</head>
+<body>
+
+    <div class="morning-bg"></div>
+    <div class="noise-overlay"></div>
+
+    <div id="hamburger" class="hamburger"><div class="line"></div><div class="line"></div><div class="line"></div></div>
+    <nav id="sideNav" class="side-nav">
+        <ul class="nav-list">
+            <li><a href="index.html" class="nav-item">主页</a></li>
+            <li><a href="index.html#exhibitions-section" class="nav-item">画展</a></li>
+            <li><a href="papers.html" class="nav-item" style="color: var(--accent-gold);">论文</a></li>
+            <li><a href="essays.html" class="nav-item">随笔日记</a></li>
+            <li class="nav-divider"></li>
+            <li><a href="#" class="nav-item lang-switch"><span>EN</span> <div class="lang-icon">文</div></a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <div class="header-group reveal-top">
+            <div class="page-subtitle">Academic Research</div>
+            <h1 class="page-title">学术与思考</h1>
+        </div>
+
+        <div class="paper-list">
+            
+            <a href="papers/modern-ink.html" class="paper-item reveal-item">
+                <div class="item-meta">
+                    <span>Dec 2024</span> &nbsp;·&nbsp; <span>Art Theory</span>
+                </div>
+                <h2 class="item-title">现代中国国画：传承与创新的交融</h2>
+                <p class="item-excerpt">
+                    现代中国国画在20世纪以来经历了深刻的转型。它源于传统文人画的笔墨精神，却在全球化与现代化浪潮中融入新元素...
+                </p>
+                <div class="arrow-icon">→</div>
+            </a>
+
+            <a href="papers/shanshui-philosophy.html" class="paper-item reveal-item">
+                <div class="item-meta">
+                    <span>Oct 2023</span> &nbsp;·&nbsp; <span>Philosophy</span>
+                </div>
+                <h2 class="item-title">论山水画中的道家哲学意蕴</h2>
+                <p class="item-excerpt">
+                    通过分析宋代山水画的空间布局，探讨“虚实相生”背后的道家哲学思想，以及其对当代环境美学的启示...
+                </p>
+                <div class="arrow-icon">→</div>
+            </a>
+
+            <a href="papers/ink-materiality.html" class="paper-item reveal-item">
+                <div class="item-meta">
+                    <span>Jan 2023</span> &nbsp;·&nbsp; <span>Material Studies</span>
+                </div>
+                <h2 class="item-title">水墨的物质性：宣纸与墨色的微观叙事</h2>
+                <p class="item-excerpt">
+                    在数字图像泛滥的今天，重新审视宣纸的纤维纹理与墨色晕染的物理特性，探讨物质媒介本身的情感表达...
+                </p>
+                <div class="arrow-icon">→</div>
+            </a>
+
+            </div>
+    </div>
+
+    <script src="assets/js/hamburger.js"></script>
+    <script>
+        const lenis = new Lenis({ duration: 1.2, smooth: true });
+        function raf(time) { lenis.raf(time); requestAnimationFrame(raf); }
+        requestAnimationFrame(raf);
+
+        gsap.registerPlugin(ScrollTrigger);
+        
+        // 标题入场
+        gsap.from(".reveal-top", {
+            y: 30, opacity: 0, duration: 1, ease: "power3.out", delay: 0.2
+        });
+
+        // 列表逐个入场
+        gsap.utils.toArray(".reveal-item").forEach((item, i) => {
+            gsap.from(item, {
+                scrollTrigger: { trigger: item, start: "top 90%" },
+                y: 30, opacity: 0, duration: 0.8, ease: "power3.out", delay: i * 0.1 // 依次延迟
+            });
+        });
+    </script>
+</body>
+</html>
 
