@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Profile | Yanxu</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/studio-freight/lenis@1.0.29/bundled/lenis.min.js"></script>
+
+    <link rel="stylesheet" href="assets/css/hamburger.css">
+    <link rel="stylesheet" href="assets/css/music-player.css">
+
+    <style>
+        /* === 复用基础设置 === */
+        :root {
+            --text-dark: #1d1d1f;       
+            --text-light: #86868b;      
+            --accent-gold: #cfa858;     
+            --bg-color: #fdfbfb;
+        }
+        html, body {
+            margin: 0; padding: 0; width: 100%; 
+            font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", serif; /* 增加 serif 衬线感 */
+            background: var(--bg-color); color: var(--text-dark);
+            overflow-x: hidden;
+        }
+
+        .morning-bg {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
+            background: linear-gradient(-45deg, #fffcf5, #fff5e6, #e6f0ff, #fffcf5);
+            background-size: 400% 400%; animation: gradientFlow 20s ease infinite;
+        }
+        .noise-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; opacity: 0.3; pointer-events: none;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='1'/%3E%3C/svg%3E");
+        }
+        @keyframes gradientFlow { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+
+        /* === Profile 专属样式 === */
+        
+        /* 1. Hero Section: 左右分栏 */
+        .profile-hero {
+            display: flex; height: 100vh; min-height: 700px;
+            padding: 120px 5vw 0;
+            align-items: center; justify-content: center;
+        }
+        .hero-left {
+            flex: 1; height: 85%; position: relative;
+            overflow: hidden; border-radius: 4px;
+        }
+        .artist-portrait {
+            width: 100%; height: 100%; object-fit: cover; /* 确保图片铺满 */
+            transform: scale(1.1); /* 用于视差起始 */
+        }
+        
+        .hero-right {
+            flex: 1; padding-left: 8vw;
+            display: flex; flex-direction: column; justify-content: center;
+        }
+        .hero-subtitle {
+            font-size: 13px; color: var(--accent-gold); letter-spacing: 3px; 
+            text-transform: uppercase; margin-bottom: 20px; font-weight: 700;
+        }
+        .hero-name {
+            font-size: 6vw; line-height: 1; font-weight: 800; margin: 0 0 30px 0;
+            color: var(--text-dark);
+        }
+        .hero-intro {
+            font-size: 16px; line-height: 1.8; color: #555; max-width: 450px;
+            font-weight: 300;
+        }
+
+        /* 2. Biography Section: 叙事文案 */
+        .bio-section {
+            max-width: 800px; margin: 150px auto; padding: 0 5vw;
+            text-align: left;
+        }
+        .bio-heading {
+            font-size: 28px; margin-bottom: 40px; font-weight: 600;
+            border-left: 3px solid var(--accent-gold); padding-left: 20px;
+        }
+        .bio-text {
+            font-size: 16px; line-height: 2; color: #444; margin-bottom: 30px;
+            text-align: justify;
+        }
+        /* 宽幅插图 */
+        .wide-img-wrap {
+            width: 90vw; margin: 0 auto 150px; height: 60vh;
+            overflow: hidden; border-radius: 4px; position: relative;
+        }
+        .wide-img { width: 100%; height: 120%; object-fit: cover; object-position: center; }
+
+        /* 3. Studio Grid: 工作室/细节 */
+        .studio-section {
+            padding: 0 5vw 150px;
+            display: flex; gap: 40px; align-items: flex-end;
+            max-width: 1200px; margin: 0 auto;
+        }
+        .studio-text { flex: 1; padding-bottom: 50px; }
+        .quote {
+            font-size: 24px; font-weight: 300; font-style: italic; color: var(--text-dark);
+            line-height: 1.6; border-top: 1px solid rgba(0,0,0,0.1); padding-top: 30px;
+        }
+        .studio-imgs { flex: 1.5; display: flex; gap: 20px; }
+        .s-img-box { flex: 1; height: 400px; overflow: hidden; border-radius: 4px; }
+        .s-img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.8s ease; }
+        .s-img-box:hover .s-img { transform: scale(1.05); }
+
+        /* 4. Contact Section: 底部联系 */
+        .contact-section {
+            text-align: center; padding: 100px 20px 150px;
+            background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.5));
+        }
+        .contact-label { font-size: 12px; letter-spacing: 2px; color: var(--text-light); text-transform: uppercase; margin-bottom: 20px; }
+        .contact-email {
+            font-size: 4vw; font-family: serif; font-weight: 400; color: var(--text-dark);
+            text-decoration: none; position: relative; display: inline-block;
+            transition: color 0.3s; cursor: pointer;
+        }
+        .contact-email::after {
+            content: ''; position: absolute; bottom: 5px; left: 0; width: 0%; height: 1px;
+            background: var(--accent-gold); transition: width 0.4s ease;
+        }
+        .contact-email:hover { color: var(--accent-gold); }
+        .contact-email:hover::after { width: 100%; }
+
+        /* Footer */
+        .site-footer {
+            text-align: center; padding: 50px 20px; border-top: 1px solid rgba(0,0,0,0.05);
+            font-size: 11px; color: var(--text-light); letter-spacing: 1px;
+        }
+
+        /* 移动端适配 */
+        @media (max-width: 768px) {
+            .profile-hero { flex-direction: column; height: auto; padding-top: 100px; }
+            .hero-left { width: 100%; height: 50vh; margin-bottom: 40px; }
+            .hero-right { width: 100%; padding-left: 0; text-align: left; }
+            .hero-name { font-size: 15vw; }
+            .studio-section { flex-direction: column-reverse; }
+            .studio-imgs { width: 100%; height: 300px; }
+            .contact-email { font-size: 32px; }
+            .wide-img-wrap { height: 40vh; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="morning-bg"></div>
+    <div class="noise-overlay"></div>
+
+    <audio id="bg-music" loop preload="auto">
+        <source src="assets/music/还是会想你曼波.mp3" type="audio/mpeg">
+    </audio>
+
+    <div id="hamburger" class="hamburger">
+        <div class="line"></div>
+        <div class="line"></div>
+        <div class="line"></div>
+    </div>
+
+    <nav id="sideNav" class="side-nav">
+        <ul class="nav-list">
+            <li><a href="index.html" class="nav-item">主页</a></li>
+            <li><a href="exhibitions.html" class="nav-item">画展</a></li>
+            <li><a href="papers.html" class="nav-item">论文</a></li>
+            <li><a href="essays.html" class="nav-item">随笔日记</a></li>
+            <li class="nav-divider"></li>
+            <li><a href="#" class="nav-item lang-switch"><span>EN</span> <div class="lang-icon">文</div></a></li>
+        </ul>
+    </nav>
+
+    <div class="controls-area">
+        <div class="control-btn music-btn muted" id="music-toggle">
+            <svg viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+        </div>
+    </div>
+
+    <main>
+        <section class="profile-hero">
+            <div class="hero-left">
+                <img src="assets/images/gallery/eg7.jpg" class="artist-portrait" alt="Yanxu Portrait">
+            </div>
+            <div class="hero-right">
+                <div class="hero-subtitle">Visual Artist</div>
+                <h1 class="hero-name">YANXU<br>严旭</h1>
+                <p class="hero-intro">
+                    生于江南，游走于水墨与现代光影之间。
+                    <br><br>
+                    我相信传统的笔墨不仅仅是历史的回响，更是捕捉当下瞬间最灵动的媒介。通过对留白与肌理的重构，我试图构建一个既真实又虚幻的“晨光画境”。
+                </p>
+            </div>
+        </section>
+
+        <section class="bio-section">
+            <h2 class="bio-heading">关于创作</h2>
+            <div class="bio-text">
+                <p>
+                    我的创作始于对自然界微小变化的观察。清晨的第一缕光线穿透雾气，雨后石阶上渐渐干涸的水痕，或是风吹过竹林时留下的瞬息动态。这些稍纵即逝的时刻，包含着巨大的能量与静谧。
+                </p>
+                <p>
+                    在技法上，我并不拘泥于传统山水的程式。我尝试引入更具现代构成的视角，利用泼墨的随机性与工笔的严谨性进行对话。画面中的“白”，不仅是空间，更是呼吸的节奏，是留给观者进入画境的入口。
+                </p>
+            </div>
+        </section>
+
+        <div class="wide-img-wrap">
+            <img src="assets/images/gallery/eg8.jpg" class="wide-img" alt="Artwork Detail">
+        </div>
+
+        <section class="studio-section">
+            <div class="studio-text">
+                <div class="quote">
+                    “画画是一种修行，是在喧嚣的世界中，为自己和他人开辟一方可以安顿心灵的净土。”
+                </div>
+            </div>
+            <div class="studio-imgs">
+                <div class="s-img-box"><img src="assets/images/gallery/eg9.jpg" class="s-img" alt="Studio 1"></div>
+                <div class="s-img-box"><img src="assets/images/gallery/eg10.jpg" class="s-img" alt="Studio 2"></div>
+            </div>
+        </section>
+
+        <section class="contact-section">
+            <div class="contact-label">Inquiries & Collaborations</div>
+            <a href="mailto:hello@yanxu.us" class="contact-email">hello@yanxu.us</a>
+            <div style="margin-top: 20px; color: #888; font-size: 13px;">
+                Located in Shanghai / Hangzhou
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="site-footer">
+        &copy; 2025 YANXU.US ALL RIGHTS RESERVED.
+    </footer>
+
+    <script src="assets/js/hamburger.js"></script>
+    <script src="assets/js/music-player.js"></script>
+
+    <script>
+        // === 1. 初始化 Lenis ===
+        const lenis = new Lenis({
+            duration: 1.2,
+            easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+            direction: 'vertical', smooth: true,
+        });
+        function raf(time) { lenis.raf(time); requestAnimationFrame(raf); }
+        requestAnimationFrame(raf);
+
+        // === 2. 动画效果 ===
+        gsap.registerPlugin(ScrollTrigger);
+
+        // Hero 区域入场
+        const tl = gsap.timeline();
+        tl.from(".hero-left", { y: 50, opacity: 0, duration: 1.2, ease: "power3.out" })
+          .from(".hero-right", { y: 30, opacity: 0, duration: 1, ease: "power3.out" }, "-=0.8");
+
+        // Hero 图片视差
+        gsap.to(".artist-portrait", {
+            yPercent: 15, ease: "none",
+            scrollTrigger: {
+                trigger: ".profile-hero",
+                start: "top top", end: "bottom top", scrub: true
+            }
+        });
+
+        // 文字段落淡入
+        gsap.utils.toArray([".bio-heading", ".bio-text p"]).forEach(el => {
+            gsap.from(el, {
+                scrollTrigger: { trigger: el, start: "top 85%" },
+                y: 20, opacity: 0, duration: 0.8, ease: "power2.out"
+            });
+        });
+
+        // 宽幅图片视差
+        gsap.to(".wide-img", {
+            yPercent: -15, ease: "none",
+            scrollTrigger: {
+                trigger: ".wide-img-wrap", start: "top bottom", end: "bottom top", scrub: true
+            }
+        });
+
+        // 工作室图片交错入场
+        gsap.from(".s-img-box", {
+            scrollTrigger: { trigger: ".studio-imgs", start: "top 80%" },
+            y: 50, opacity: 0, duration: 1, stagger: 0.2, ease: "power2.out"
+        });
+
+    </script>
+</body>
+</html>
