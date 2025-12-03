@@ -8,8 +8,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/studio-freight/lenis@1.0.29/bundled/lenis.min.js"></script>
+    
     <link rel="stylesheet" href="assets/css/hamburger.css">
-
     <style>
         :root {
             --text-dark: #1d1d1f;       
@@ -100,11 +100,11 @@
     <nav id="sideNav" class="side-nav">
         <ul class="nav-list">
             <li><a href="index.html" class="nav-item">主页</a></li>
-            <li><a href="index.html#exhibitions-section" class="nav-item">画展</a></li>
+            <li><a href="#exhibitions-section" class="nav-item">画展</a></li>
             <li><a href="papers.html" class="nav-item">论文</a></li>
             <li><a href="essays.html" class="nav-item" style="color: var(--accent-gold);">随笔日记</a></li>
             <li class="nav-divider"></li>
-            <li><a href="#" class="nav-item lang-switch"><span>EN</span> <div class="lang-icon">文</div></a></li>
+            <li><a href="#" class="nav-item lang-switch" id="nav-lang-switch"><span>EN</span> <div class="lang-icon">文</div></a></li>
         </ul>
     </nav>
 
@@ -130,76 +130,31 @@
             </a>
 
             <a href="essays/essay2.html" class="essay-card reveal-item">
-                <div class="card-img-box">
-                    <img src="assets/images/gallery/eg3.jpg" alt="Cover" class="card-img">
-                </div>
-                <div class="card-content">
-                    <div class="card-meta">Nov 15, 2025 · Inspiration</div>
-                    <h2 class="card-title">论留白的勇气</h2>
-                    <p class="card-excerpt">
-                        画满容易，留白难。今天在处理《古木》这幅画时，我对着那块空白犹豫了整整一个下午...
-                    </p>
-                </div>
+                <div class="card-img-box"><img src="assets/images/gallery/eg3.jpg" alt="Cover" class="card-img"></div>
+                <div class="card-content"><div class="card-meta">Nov 15, 2025 · Inspiration</div><h2 class="card-title">论留白的勇气</h2><p class="card-excerpt">画满容易，留白难。今天在处理《古木》这幅画时...</p></div>
             </a>
-
             <a href="essays/essay3.html" class="essay-card reveal-item">
-                <div class="card-img-box">
-                    <img src="assets/images/gallery/eg5.jpg" alt="Cover" class="card-img">
-                </div>
-                <div class="card-content">
-                    <div class="card-meta">Oct 28, 2025 · Travel</div>
-                    <h2 class="card-title">京都寻纸记</h2>
-                    <p class="card-excerpt">
-                        在京都的老巷子里，我找到了一家传承百年的和纸店。那种纸张的纹理，像极了初冬的霜...
-                    </p>
-                </div>
+                <div class="card-img-box"><img src="assets/images/gallery/eg5.jpg" alt="Cover" class="card-img"></div>
+                <div class="card-content"><div class="card-meta">Oct 28, 2025 · Travel</div><h2 class="card-title">京都寻纸记</h2><p class="card-excerpt">在京都的老巷子里，我找到了一家传承百年的和纸店...</p></div>
             </a>
-
             <a href="essays/essay4.html" class="essay-card reveal-item">
-                <div class="card-img-box">
-                    <img src="assets/images/gallery/eg5.jpg" alt="Cover" class="card-img">
-                </div>
-                <div class="card-content">
-                    <div class="card-meta">Oct 28, 2025 · Travel</div>
-                    <h2 class="card-title">京都寻纸记</h2>
-                    <p class="card-excerpt">
-                        在京都的老巷子里，我找到了一家传承百年的和纸店。那种纸张的纹理，像极了初冬的霜...
-                    </p>
-                </div>
+                <div class="card-img-box"><img src="assets/images/gallery/eg5.jpg" alt="Cover" class="card-img"></div>
+                <div class="card-content"><div class="card-meta">Oct 28, 2025 · Travel</div><h2 class="card-title">京都寻纸记</h2><p class="card-excerpt">在京都的老巷子里，我找到了一家传承百年的和纸店...</p></div>
             </a>
-
             <a href="essays/essay5.html" class="essay-card reveal-item">
-                <div class="card-img-box">
-                    <img src="assets/images/gallery/eg5.jpg" alt="Cover" class="card-img">
-                </div>
-                <div class="card-content">
-                    <div class="card-meta">Oct 28, 2025 · Travel</div>
-                    <h2 class="card-title">京都寻纸记</h2>
-                    <p class="card-excerpt">
-                        在京都的老巷子里，我找到了一家传承百年的和纸店。那种纸张的纹理，像极了初冬的霜...
-                    </p>
-                </div>
+                <div class="card-img-box"><img src="assets/images/gallery/eg5.jpg" alt="Cover" class="card-img"></div>
+                <div class="card-content"><div class="card-meta">Oct 28, 2025 · Travel</div><h2 class="card-title">京都寻纸记</h2><p class="card-excerpt">在京都的老巷子里，我找到了一家传承百年的和纸店...</p></div>
             </a>
-
             <a href="essays/essay6.html" class="essay-card reveal-item">
-                <div class="card-img-box">
-                    <img src="assets/images/gallery/eg5.jpg" alt="Cover" class="card-img">
-                </div>
-                <div class="card-content">
-                    <div class="card-meta">Oct 28, 2025 · Travel</div>
-                    <h2 class="card-title">京都寻纸记</h2>
-                    <p class="card-excerpt">
-                        在京都的老巷子里，我找到了一家传承百年的和纸店。那种纸张的纹理，像极了初冬的霜...
-                    </p>
-                </div>
+                <div class="card-img-box"><img src="assets/images/gallery/eg5.jpg" alt="Cover" class="card-img"></div>
+                <div class="card-content"><div class="card-meta">Oct 28, 2025 · Travel</div><h2 class="card-title">京都寻纸记</h2><p class="card-excerpt">在京都的老巷子里，我找到了一家传承百年的和纸店...</p></div>
             </a>
 
-
-            
         </div>
     </div>
 
     <script src="assets/js/hamburger.js"></script>
+    
     <script>
         const lenis = new Lenis({ duration: 1.2, smooth: true });
         function raf(time) { lenis.raf(time); requestAnimationFrame(raf); }
