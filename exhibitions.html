@@ -13,7 +13,7 @@
     <link rel="stylesheet" href="assets/css/music-player.css">
 
     <style>
-        /* === 全局复用变量 (保持与 Index 一致) === */
+        /* === 基础设置 (保持一致) === */
         :root {
             --text-dark: #1d1d1f;       
             --text-light: #86868b;      
@@ -22,15 +22,13 @@
         }
 
         html, body {
-            margin: 0; padding: 0;
-            width: 100%; 
-            font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Helvetica, Arial, sans-serif;
-            background: var(--bg-color);
-            color: var(--text-dark);
+            margin: 0; padding: 0; width: 100%; 
+            font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+            background: var(--bg-color); color: var(--text-dark);
             overflow-x: hidden;
         }
 
-        /* === 背景 (复用) === */
+        /* 背景 */
         .morning-bg {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
             background: linear-gradient(-45deg, #fffcf5, #fff5e6, #e6f0ff, #fffcf5);
@@ -42,80 +40,63 @@
         }
         @keyframes gradientFlow { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
 
-        /* === 页面特定样式 === */
-        
-        /* 1. Page Header */
+        /* === 页面头部 === */
         .page-header {
-            height: 60vh;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            text-align: center;
-            opacity: 0; transform: translateY(30px); /* 初始状态用于动画 */
+            height: 50vh; display: flex; flex-direction: column; justify-content: center; align-items: center;
+            text-align: center; opacity: 0; transform: translateY(30px);
         }
-        .ph-title {
-            font-size: 6vw; font-weight: 800; letter-spacing: 2px; margin: 0;
-            color: var(--text-dark);
-        }
-        .ph-subtitle {
-            font-size: 14px; color: var(--text-light); letter-spacing: 4px; 
-            text-transform: uppercase; margin-top: 15px;
-            border-bottom: 1px solid var(--accent-gold); padding-bottom: 5px;
-        }
+        .ph-title { font-size: 6vw; font-weight: 800; letter-spacing: 2px; margin: 0; color: var(--text-dark); }
+        .ph-subtitle { font-size: 14px; color: var(--text-light); letter-spacing: 4px; text-transform: uppercase; margin-top: 15px; border-bottom: 1px solid var(--accent-gold); padding-bottom: 5px; }
 
-        /* 2. Timeline Layout */
+        /* === 展览列表容器 === */
         .timeline-container {
-            max-width: 1200px; margin: 0 auto; padding: 50px 5vw 150px;
+            max-width: 1200px; margin: 0 auto; padding: 0 5vw 150px;
             position: relative;
         }
 
-        .year-marker {
-            font-size: 80px; font-weight: 900; color: rgba(0,0,0,0.05);
-            position: absolute; left: 0; transform: translateY(-50%);
-            z-index: 0; pointer-events: none;
+        /* 年份大背景字 */
+        .year-marker-row {
+            font-size: 80px; font-weight: 900; color: rgba(0,0,0,0.04);
+            margin-top: 50px; margin-bottom: -40px; 
+            position: relative; z-index: 0; padding-left: 20px;
+            user-select: none;
         }
 
+        /* 单个展览行 */
         .exhibit-row {
             display: flex; align-items: stretch; justify-content: space-between;
-            margin-bottom: 150px; position: relative; z-index: 10;
+            margin-bottom: 160px; position: relative; z-index: 10;
         }
         .exhibit-row.reverse { flex-direction: row-reverse; }
 
+        /* 图片区域 */
         .ex-image-wrap {
-            width: 55%; height: 500px;
-            overflow: hidden; border-radius: 4px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
-            position: relative;
+            width: 55%; height: 500px; overflow: hidden; border-radius: 4px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1); position: relative;
         }
-        .ex-img {
-            width: 100%; height: 120%; /* 为视差预留高度 */
-            object-fit: cover; object-position: center;
-        }
+        .ex-img { width: 100%; height: 120%; object-fit: cover; object-position: center; } /* height 120% 用于视差 */
+        
+        /* 状态标签 */
         .ex-badge {
             position: absolute; top: 20px; left: 20px;
             background: #fff; padding: 6px 12px;
             font-size: 10px; letter-spacing: 1px; font-weight: 700;
-            text-transform: uppercase; color: var(--text-dark);
+            text-transform: uppercase; color: var(--text-dark); z-index: 2;
         }
 
+        /* 文字区域 */
         .ex-content {
-            width: 38%;
-            display: flex; flex-direction: column; justify-content: center;
+            width: 38%; display: flex; flex-direction: column; justify-content: center;
         }
-        .ex-date {
-            color: var(--accent-gold); font-weight: 700; font-size: 14px; letter-spacing: 1px;
-            margin-bottom: 10px; display: block;
-        }
-        .ex-title {
-            font-size: 32px; font-weight: 600; line-height: 1.2; margin-bottom: 20px;
-            color: var(--text-dark);
-        }
-        .ex-desc {
-            font-size: 15px; line-height: 1.8; color: #555; margin-bottom: 30px;
-            font-weight: 300; text-align: justify;
-        }
+        .ex-date { color: var(--accent-gold); font-weight: 700; font-size: 14px; letter-spacing: 1px; margin-bottom: 10px; }
+        .ex-title { font-size: 32px; font-weight: 600; line-height: 1.2; margin-bottom: 20px; color: var(--text-dark); }
+        .ex-desc { font-size: 15px; line-height: 1.8; color: #555; margin-bottom: 30px; font-weight: 300; text-align: justify; }
+        
+        /* 底部信息与按钮 */
         .ex-meta {
             font-size: 12px; color: var(--text-light);
             border-top: 1px solid rgba(0,0,0,0.05); padding-top: 15px;
-            display: flex; gap: 20px;
+            display: flex; gap: 20px; margin-bottom: 20px;
         }
         .meta-item { display: flex; align-items: center; gap: 6px; }
         .meta-icon { width: 14px; height: 14px; fill: var(--text-light); }
@@ -124,45 +105,24 @@
             display: inline-block; width: fit-content;
             font-size: 11px; letter-spacing: 1px; text-transform: uppercase;
             color: var(--text-dark); border-bottom: 1px solid var(--text-dark);
-            padding-bottom: 2px; transition: opacity 0.3s;
-            text-decoration: none;
+            padding-bottom: 2px; text-decoration: none; transition: opacity 0.3s; cursor: pointer;
         }
         .btn-link:hover { opacity: 0.6; }
 
-        /* Archive List (Simple List for older items) */
-        .archive-section {
-            padding: 80px 5vw; background: rgba(255,255,255,0.4);
-            text-align: center;
-        }
-        .archive-title { font-size: 18px; margin-bottom: 40px; letter-spacing: 2px; }
-        .archive-grid {
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 30px; max-width: 1200px; margin: 0 auto;
-        }
-        .archive-item {
-            background: #fff; padding: 25px; text-align: left;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.03);
-            transition: transform 0.3s;
-        }
-        .archive-item:hover { transform: translateY(-5px); }
-        .arc-year { font-size: 12px; color: var(--accent-gold); font-weight: 700; }
-        .arc-name { font-size: 16px; font-weight: 600; margin: 8px 0; color: var(--text-dark); }
-        .arc-loc { font-size: 12px; color: var(--text-light); }
-
         .site-footer {
-            text-align: center; padding: 50px 20px;
-            border-top: 1px solid rgba(0,0,0,0.05);
+            text-align: center; padding: 50px 20px; border-top: 1px solid rgba(0,0,0,0.05);
             font-size: 11px; color: var(--text-light); letter-spacing: 1px;
         }
 
         /* 移动端适配 */
         @media (max-width: 768px) {
             .ph-title { font-size: 12vw; }
+            .timeline-container { padding-top: 0; }
             .exhibit-row, .exhibit-row.reverse { flex-direction: column; gap: 30px; margin-bottom: 100px; }
             .ex-image-wrap { width: 100%; height: 280px; }
             .ex-content { width: 100%; }
             .ex-title { font-size: 24px; }
-            .year-marker { display: none; }
+            .year-marker-row { font-size: 50px; margin-bottom: -20px; margin-top: 30px; }
         }
     </style>
 </head>
@@ -204,21 +164,19 @@
     </header>
 
     <main>
-        
         <div class="timeline-container">
             
-            <div class="year-marker" style="top: 0;">2024</div>
-            
+            <div class="year-marker-row">2024</div>
             <div class="exhibit-row">
                 <div class="ex-image-wrap">
                     <span class="ex-badge">Current Exhibition</span>
-                    <img src="assets/images/gallery/eg5.jpg" class="ex-img" alt="Exhibition">
+                    <img src="assets/images/gallery/eg5.jpg" class="ex-img" alt="Exhibition 1">
                 </div>
                 <div class="ex-content">
                     <span class="ex-date">MAY 20 - AUG 15, 2024</span>
                     <h2 class="ex-title">晨光与墨痕：严旭个展</h2>
                     <p class="ex-desc">
-                        本次展览汇集了艺术家近两年在“光影水墨”领域的探索成果。在 M50 艺术空间的开放式展厅中，
+                        本次展览汇集了近两年在“光影水墨”领域的探索成果。在 M50 艺术空间的开放式展厅中，
                         观众将沉浸在从清晨至日暮的光线变化中，感受墨色如何捕捉时间的流逝。
                     </p>
                     <div class="ex-meta">
@@ -227,23 +185,21 @@
                             SHANGHAI, M50 Art Space
                         </div>
                     </div>
-                    <br>
-                    <a href="#" class="btn-link">View Details</a>
+                    <a href="#" class="btn-link">查看详情</a>
                 </div>
             </div>
 
-            <div class="year-marker" style="top: 45%;">2023</div>
-
+            <div class="year-marker-row">2023</div>
             <div class="exhibit-row reverse">
                 <div class="ex-image-wrap">
                     <span class="ex-badge">Solo Show</span>
-                    <img src="assets/images/gallery/eg1.jpg" class="ex-img" alt="Exhibition">
+                    <img src="assets/images/gallery/eg1.jpg" class="ex-img" alt="Exhibition 2">
                 </div>
                 <div class="ex-content">
                     <span class="ex-date">NOV 10 - DEC 20, 2023</span>
                     <h2 class="ex-title">东方既白：当代水墨联展</h2>
                     <p class="ex-desc">
-                        试图在传统与现代之间建立对话。严旭的作品《山间清风》作为核心展品，展示了如何用最传统的媒材表达最当下的情绪。
+                        试图在传统与现代之间建立对话。作品《山间清风》作为核心展品，展示了如何用最传统的媒材表达最当下的情绪，打破了公众对水墨“陈旧”的刻板印象。
                     </p>
                     <div class="ex-meta">
                         <div class="meta-item">
@@ -251,20 +207,19 @@
                             BEIJING, 798 Art Zone
                         </div>
                     </div>
-                    <br>
-                    <a href="#" class="btn-link">Catalog PDF</a>
+                    <a href="#" class="btn-link">展览画册</a>
                 </div>
             </div>
 
             <div class="exhibit-row">
                 <div class="ex-image-wrap">
-                    <img src="assets/images/gallery/eg7.jpg" class="ex-img" alt="Exhibition">
+                    <img src="assets/images/gallery/eg7.jpg" class="ex-img" alt="Exhibition 3">
                 </div>
                 <div class="ex-content">
                     <span class="ex-date">MAR 15 - APR 30, 2023</span>
                     <h2 class="ex-title">雨后初晴</h2>
                     <p class="ex-desc">
-                        一场关于江南湿润气候的视觉实验。展览空间被布置成半透明的迷宫，画作悬挂其中，如同雨后云雾缭绕。
+                        一场关于江南湿润气候的视觉实验。展览空间被布置成半透明的迷宫，画作悬挂其中，如同雨后云雾缭绕。观众在行走中，与画作产生呼吸般的互动。
                     </p>
                     <div class="ex-meta">
                         <div class="meta-item">
@@ -272,37 +227,55 @@
                             HANGZHOU, West Lake Museum
                         </div>
                     </div>
+                    <a href="#" class="btn-link">现场回顾</a>
+                </div>
+            </div>
+
+            <div class="year-marker-row">2022</div>
+            <div class="exhibit-row reverse">
+                <div class="ex-image-wrap">
+                    <img src="assets/images/gallery/eg3.jpg" class="ex-img" alt="Exhibition 4">
+                </div>
+                <div class="ex-content">
+                    <span class="ex-date">OCT 05 - OCT 25, 2022</span>
+                    <h2 class="ex-title">静谧的声音</h2>
+                    <p class="ex-desc">
+                        这是严旭在海外的首次重要亮相。以“极简主义”为核心，探讨留白在跨文化语境下的理解。
+                        展览吸引了大量日本年轻观众，被评价为“具有禅意的新水墨”。
+                    </p>
+                    <div class="ex-meta">
+                        <div class="meta-item">
+                            <svg class="meta-icon" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                            TOKYO, Ginza Art Hall
+                        </div>
+                    </div>
+                    <a href="#" class="btn-link">媒体报道</a>
+                </div>
+            </div>
+
+            <div class="year-marker-row">2021</div>
+            <div class="exhibit-row">
+                <div class="ex-image-wrap">
+                    <img src="assets/images/gallery/eg2.jpg" class="ex-img" alt="Exhibition 5">
+                </div>
+                <div class="ex-content">
+                    <span class="ex-date">DEC 12, 2021 - JAN 10, 2022</span>
+                    <h2 class="ex-title">墨·界：青年艺术家提名展</h2>
+                    <p class="ex-desc">
+                        在这个探索性群展中，展出了早期实验性作品系列。尝试将水墨与综合材料结合，
+                        突破二维平面的限制，探索水墨在空间中的物理延展性。
+                    </p>
+                    <div class="ex-meta">
+                        <div class="meta-item">
+                            <svg class="meta-icon" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                            SHENZHEN, OCAT
+                        </div>
+                    </div>
+                    <a href="#" class="btn-link">查看作品</a>
                 </div>
             </div>
 
         </div>
-
-        <div class="archive-section">
-            <h3 class="archive-title">SELECTED ARCHIVES</h3>
-            <div class="archive-grid">
-                <div class="archive-item">
-                    <div class="arc-year">2022</div>
-                    <div class="arc-name">静谧的声音</div>
-                    <div class="arc-loc">TOKYO, Ginza Art Hall</div>
-                </div>
-                <div class="archive-item">
-                    <div class="arc-year">2021</div>
-                    <div class="arc-name">墨·界 - 青年艺术家提名展</div>
-                    <div class="arc-loc">SHENZHEN, OCAT</div>
-                </div>
-                <div class="archive-item">
-                    <div class="arc-year">2020</div>
-                    <div class="arc-name">毕业作品展：无声的河流</div>
-                    <div class="arc-loc">CAA Art Museum</div>
-                </div>
-                <div class="archive-item">
-                    <div class="arc-year">2019</div>
-                    <div class="arc-name">纸上谈兵 - 实验水墨展</div>
-                    <div class="arc-loc">NANJING</div>
-                </div>
-            </div>
-        </div>
-
     </main>
 
     <footer class="site-footer">
@@ -313,49 +286,37 @@
     <script src="assets/js/music-player.js"></script>
 
     <script>
-        // === 1. 初始化 Lenis 平滑滚动 ===
+        // === 1. Lenis 平滑滚动 ===
         const lenis = new Lenis({
             duration: 1.2,
             easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-            direction: 'vertical',
-            smooth: true,
+            direction: 'vertical', smooth: true,
         });
-
-        function raf(time) {
-            lenis.raf(time);
-            requestAnimationFrame(raf);
-        }
+        function raf(time) { lenis.raf(time); requestAnimationFrame(raf); }
         requestAnimationFrame(raf);
 
-        // === 2. 页面进入动画 ===
-        gsap.to(".page-header", {
-            opacity: 1, y: 0, duration: 1.5, ease: "power3.out"
-        });
+        // === 2. 页面入场 ===
+        gsap.to(".page-header", { opacity: 1, y: 0, duration: 1.5, ease: "power3.out" });
 
-        // === 3. ScrollTrigger 动画 ===
+        // === 3. 滚动动画 (视差 + 淡入) ===
         gsap.registerPlugin(ScrollTrigger);
 
-        // 为每个主要展览添加淡入和图片视差
         document.querySelectorAll('.exhibit-row').forEach(row => {
             const img = row.querySelector('.ex-img');
-            const content = row.querySelector('.ex-content');
-
+            
             // 整体淡入
             gsap.from(row, {
                 scrollTrigger: {
                     trigger: row,
-                    start: "top 85%", 
+                    start: "top 85%", // 当元素顶部到达视口85%处触发
                     toggleActions: "play none none reverse"
                 },
-                opacity: 0,
-                y: 50,
-                duration: 1,
-                ease: "power2.out"
+                opacity: 0, y: 50, duration: 1, ease: "power2.out"
             });
 
-            // 图片视差 (图片在容器内移动)
+            // 图片内部视差移动
             gsap.to(img, {
-                yPercent: -15, // 向上移动 15%
+                yPercent: -15, 
                 ease: "none",
                 scrollTrigger: {
                     trigger: row,
@@ -365,21 +326,17 @@
                 }
             });
         });
-
-        // 归档列表交错动画
-        gsap.from(".archive-item", {
-            scrollTrigger: {
-                trigger: ".archive-grid",
-                start: "top 85%"
-            },
-            y: 30,
-            opacity: 0,
-            duration: 0.8,
-            stagger: 0.1,
-            ease: "back.out(1.7)"
+        
+        // 年份数字的轻微视差
+        document.querySelectorAll('.year-marker-row').forEach(year => {
+            gsap.from(year, {
+                scrollTrigger: {
+                    trigger: year,
+                    start: "top 90%"
+                },
+                opacity: 0, x: -20, duration: 1, ease: "power2.out"
+            });
         });
-
     </script>
 </body>
 </html>
-
