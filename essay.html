@@ -1,1 +1,182 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Yanxu | 随笔日记</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/studio-freight/lenis@1.0.29/bundled/lenis.min.js"></script>
+    <link rel="stylesheet" href="assets/css/hamburger.css">
+
+    <style>
+        :root {
+            --text-dark: #1d1d1f;       
+            --text-light: #86868b;      
+            --accent-gold: #cfa858;     
+            --bg-color: #fdfbfb;
+            --serif-font: "Songti SC", "Noto Serif SC", "SimSun", serif;
+        }
+
+        html, body {
+            margin: 0; padding: 0; width: 100%; 
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-color); color: var(--text-dark);
+            -webkit-font-smoothing: antialiased;
+        }
+        
+        /* 动态背景 */
+        .morning-bg {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
+            background: linear-gradient(-45deg, #fffcf5, #fff5e6, #e6f0ff, #fffcf5);
+            background-size: 400% 400%; animation: gradientFlow 20s ease infinite;
+        }
+        .noise-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
+            opacity: 0.3; pointer-events: none;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='1'/%3E%3C/svg%3E");
+        }
+        @keyframes gradientFlow { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+
+        /* 页面布局 */
+        .container { max-width: 1000px; margin: 0 auto; padding: 120px 30px 60px; }
+        
+        .header-group { margin-bottom: 80px; text-align: center; }
+        .page-subtitle { font-size: 12px; letter-spacing: 3px; color: var(--text-light); text-transform: uppercase; margin-bottom: 10px; }
+        .page-title { font-size: 32px; font-weight: 700; font-family: var(--serif-font); }
+
+        /* 随笔列表样式 (图文结合) */
+        .essay-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 40px; }
+
+        .essay-card {
+            display: block; text-decoration: none;
+            background: rgba(255,255,255,0.6);
+            border: 1px solid rgba(0,0,0,0.05);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.4s ease;
+            cursor: pointer;
+        }
+        .essay-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+            background: #fff;
+        }
+
+        .card-img-box {
+            width: 100%; height: 200px; overflow: hidden;
+        }
+        .card-img {
+            width: 100%; height: 100%; object-fit: cover;
+            transition: transform 0.6s ease;
+        }
+        .essay-card:hover .card-img { transform: scale(1.05); }
+
+        .card-content { padding: 25px; }
+        .card-meta { font-size: 12px; color: var(--accent-gold); margin-bottom: 8px; letter-spacing: 1px; }
+        .card-title {
+            font-size: 20px; font-weight: 600; color: var(--text-dark);
+            font-family: var(--serif-font); margin-bottom: 12px;
+            line-height: 1.4;
+        }
+        .card-excerpt {
+            font-size: 14px; color: #666; line-height: 1.6;
+            display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+        }
+
+        /* 移动端适配 */
+        @media (max-width: 768px) {
+            .essay-list { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="morning-bg"></div>
+    <div class="noise-overlay"></div>
+
+    <div id="hamburger" class="hamburger"><div class="line"></div><div class="line"></div><div class="line"></div></div>
+    <nav id="sideNav" class="side-nav">
+        <ul class="nav-list">
+            <li><a href="index.html" class="nav-item">主页</a></li>
+            <li><a href="index.html#exhibitions-section" class="nav-item">画展</a></li>
+            <li><a href="papers.html" class="nav-item">论文</a></li>
+            <li><a href="essays.html" class="nav-item" style="color: var(--accent-gold);">随笔日记</a></li>
+            <li class="nav-divider"></li>
+            <li><a href="#" class="nav-item lang-switch"><span>EN</span> <div class="lang-icon">文</div></a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <div class="header-group reveal-top">
+            <div class="page-subtitle">Journal & Thoughts</div>
+            <h1 class="page-title">墨 痕 笔 记</h1>
+        </div>
+
+        <div class="essay-list">
+            
+            <a href="essays/essay-1.html" class="essay-card reveal-item">
+                <div class="card-img-box">
+                    <img src="assets/images/gallery/eg1.jpg" alt="Cover" class="card-img">
+                </div>
+                <div class="card-content">
+                    <div class="card-meta">Dec 02, 2025 · Studio Log</div>
+                    <h2 class="card-title">晨光里的墨与水：一次关于“空”的对话</h2>
+                    <p class="card-excerpt">
+                        清晨五点，天色是一种近乎透明的黛蓝。我习惯在这个时候醒来，不是被闹钟唤醒，而是被光。
+                    </p>
+                </div>
+            </a>
+
+            <a href="#" class="essay-card reveal-item">
+                <div class="card-img-box">
+                    <img src="assets/images/gallery/eg3.jpg" alt="Cover" class="card-img">
+                </div>
+                <div class="card-content">
+                    <div class="card-meta">Nov 15, 2025 · Inspiration</div>
+                    <h2 class="card-title">论留白的勇气</h2>
+                    <p class="card-excerpt">
+                        画满容易，留白难。今天在处理《古木》这幅画时，我对着那块空白犹豫了整整一个下午...
+                    </p>
+                </div>
+            </a>
+
+            <a href="#" class="essay-card reveal-item">
+                <div class="card-img-box">
+                    <img src="assets/images/gallery/eg5.jpg" alt="Cover" class="card-img">
+                </div>
+                <div class="card-content">
+                    <div class="card-meta">Oct 28, 2025 · Travel</div>
+                    <h2 class="card-title">京都寻纸记</h2>
+                    <p class="card-excerpt">
+                        在京都的老巷子里，我找到了一家传承百年的和纸店。那种纸张的纹理，像极了初冬的霜...
+                    </p>
+                </div>
+            </a>
+
+        </div>
+    </div>
+
+    <script src="assets/js/hamburger.js"></script>
+    <script>
+        const lenis = new Lenis({ duration: 1.2, smooth: true });
+        function raf(time) { lenis.raf(time); requestAnimationFrame(raf); }
+        requestAnimationFrame(raf);
+
+        gsap.registerPlugin(ScrollTrigger);
+        
+        gsap.from(".reveal-top", {
+            y: 30, opacity: 0, duration: 1, ease: "power3.out", delay: 0.2
+        });
+
+        gsap.utils.toArray(".reveal-item").forEach((item, i) => {
+            gsap.from(item, {
+                scrollTrigger: { trigger: item, start: "top 90%" },
+                y: 30, opacity: 0, duration: 0.8, ease: "power3.out", delay: i * 0.1
+            });
+        });
+    </script>
+</body>
+</html>
 
