@@ -140,80 +140,69 @@
 }
 
 /* =========================================
-   【新增】隐藏 Google 翻译自带的丑陋 UI
-   ========================================= */
-/* 隐藏顶部横幅 */
-.goog-te-banner-frame.skiptranslate {
-    display: none !important;
-}
-body {
-    top: 0px !important;
-}
-/* 隐藏原来的 Google 下拉框 */
-#google_translate_element {
-    display: none !important;
-}
-/* 隐藏鼠标悬停时的弹窗提示 */
-.goog-tooltip {
-    display: none !important;
-}
-.goog-tooltip:hover {
-    display: none !important;
-}
-.goog-text-highlight {
-    background-color: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-}
-/* 隐藏 Google Logo */
-.goog-logo-link {
-    display: none !important;
-}
-.goog-te-gadget {
-    color: transparent !important;
-}
-
-/* ... (保留上面的导航栏样式不变) ... */
-
-/* =========================================
-   【加强版】隐藏 Google 翻译自带 UI
+   【核弹级】隐藏 Google 翻译自带 UI
    ========================================= */
 
-/* 1. 隐藏顶部的 iframe 横幅 */
-.goog-te-banner-frame.skiptranslate {
+/* 1. 隐藏 Google 插入的 iframe 横幅 (覆盖所有情况) */
+.goog-te-banner-frame,
+iframe.goog-te-banner-frame,
+.goog-te-banner-frame.skiptranslate,
+.goog-te-gadget-simple {
     display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    width: 0 !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    z-index: -9999 !important;
+    position: absolute !important;
+    top: -9999px !important;
 }
 
-/* 2. 强制重置 body 位置 (Google 会给 body 加 top: 40px) */
+/* 2. 强制锁定 body 位置，防止下沉 */
 body {
     top: 0px !important;
     position: static !important;
+    min-height: 100% !important; 
+}
+
+html {
+    height: 100% !important;
 }
 
 /* 3. 隐藏原来的下拉框容器 */
 #google_translate_element {
     display: none !important;
+    height: 0 !important;
+    overflow: hidden !important;
 }
 
-/* 4. 隐藏鼠标悬停时的弹窗提示 */
-.goog-tooltip {
-    display: none !important;
-}
+/* 4. 隐藏悬浮提示 */
+.goog-tooltip, 
 .goog-tooltip:hover {
     display: none !important;
+    visibility: hidden !important;
 }
+
 .goog-text-highlight {
     background-color: transparent !important;
     border: none !important;
     box-shadow: none !important;
 }
 
-/* 5. 隐藏移动端特定的横幅 */
-iframe.goog-te-banner-frame {
+/* 5. 针对移动端特定横幅的暴力隐藏 */
+body > .skiptranslate {
+    display: none !important;
+    height: 0 !important;
     visibility: hidden !important;
+}
+
+/* 6. 隐藏 Google Logo 和其他杂项 */
+.goog-logo-link {
     display: none !important;
 }
-font font {
-    background-color: transparent !important;
-    box-shadow: none !important;
+.goog-te-gadget {
+    color: transparent !important;
+    font-size: 0 !important;
+    height: 0 !important;
 }
