@@ -602,14 +602,20 @@
 
 
         // ============================================
-        // 修复：只针对 http 开头的外部链接新开窗口，内部链接直接跳转
-        document.querySelectorAll('a[href]').forEach(a => {
-            const href = a.getAttribute('href');
-            if (href && href.startsWith('http')) {
-                a.setAttribute('target', '_blank');
-                a.setAttribute('rel', 'noopener noreferrer');
-            }
-        });
+      // 修复：针对 http 开头的外部链接，或者包含 'exhibitions/' 的画展链接，都新开窗口
+document.querySelectorAll('a[href]').forEach(a => {
+    const href = a.getAttribute('href');
+    
+    // 修改了这里的判断条件：
+    // 1. 以 http 开头 (外部链接)
+    //    或者
+    // 2. 链接路径里包含 'exhibitions/' (画展详情页)
+    if (href && (href.startsWith('http') || href.includes('exhibitions/'))) {
+        a.setAttribute('target', '_blank');
+        a.setAttribute('rel', 'noopener noreferrer');
+    }
+});
+
 
     </script>
 </body>
